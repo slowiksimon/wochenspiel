@@ -573,7 +573,7 @@ console.log('8. settings');
   await a.evaluate(() => window.scrollTo(0, 0));
   await tapSel(a, '#open-settings');
   const blockText = await waitFor(() => text(a, '.ws-set'), 3000);
-  check('settings sheet has the connection block', /Verbindung/.test(blockText) && blockText.includes('····' + R.slice(-4).toUpperCase()) && /Online/.test(blockText) && /Version 2\.1 \([0-9a-f]{6}\)/.test(blockText), blockText);
+  check('settings sheet has the connection block', /Verbindung/.test(blockText) && blockText.includes('····' + R.slice(-4).toUpperCase()) && /Online/.test(blockText) && /Version 2\.2 \([0-9a-f]{6}\)/.test(blockText), blockText);
   await shot(a, 'settings.png');
   check('connection block shows no household secrets', !blockText.includes(R) && !/AIza/.test(blockText));
   await tapLabel(a, 'Einladen / QR-Code', '#modal');

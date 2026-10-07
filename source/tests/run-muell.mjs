@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { launch, phone, sleep, waitFor, tapSel, setValue, visible, text, net, reporter, UA_IPHONE, W, NOW } from './e2e-lib.mjs';
 import { startServer } from './fake-server.mjs';
 import { starterTasks } from '../src/seed.js';
+import * as Mu from '../src/muell-core.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const server = await startServer({ dir: path.resolve(here, '../dist-fake') });
@@ -82,6 +83,10 @@ check('"Weitere Termine": the five pickups after the next one', soon.join('|') =
 const row1 = await a.evaluate(() => { const r = document.querySelector('#mu-soon .mu-row'); return { tile: r.querySelector('.mu-tile').innerText.replace(/\s+/g, ' '), rel: r.querySelector('.mu-rel').textContent, sr: r.querySelector('.sr').textContent, bins: r.querySelectorAll('.bin').length }; });
 check('…each with its date, weekday, how far away it is, and the bins', row1.tile === '12 Okt.' && row1.rel === 'Montag, in 5 Tagen' && row1.sr === 'Montag, 12. Oktober, in 5 Tagen: ' && row1.bins === 2, JSON.stringify(row1));
 check('the screen has the "Gut zu wissen" card with the 6 o\'clock rule and the recycling centre', /bis 6 Uhr früh/.test(await text(a, '#mu-info')) && /Lederhasgasse 11/.test(await text(a, '#mu-info')) && (await attr(a, '#mu-info a', 'href')) === 'https://www.gvabaden.at');
+check('the reminder card first asks for the street (the calendar needs the Restmüll area)', await visible(a, '#mu-remind') && /Wählt zuerst eure Straße/.test(await text(a, '#mu-remind')) && await visible(a, '#mu-rm-street') && !(await a.evaluate(() => !!document.querySelector('#mu-remind a[href^="webcal:"]'))));
+await tapSel(a, '#mu-rm-street');
+check('…its button opens "Eure Tonnen" at the street field', await visible(a, '#mu-sheet') && (await a.evaluate(() => document.activeElement && document.activeElement.id)) === 'mu-street');
+await tapSel(a, '#mu-cancel');
 
 console.log('3. "Eure Tonnen"');
 await tapSel(a, '#mu-pick');
@@ -100,6 +105,22 @@ check('the choice is written to settings/muell, for both phones', await waitFor(
 check('the screen follows: caption with street and area, no prompt', (await text(a, '#mu-cap')) === 'Haydngasse, Bereich 2' && !(await visible(a, '#mu-pick')));
 check('…area 2 only: Thursday 15 Restmüll, Monday 12 only Bio, Monday 19 no yellow bin', (await binsOf(a, '2026-10-15')) === 'rest' && (await binsOf(a, '2026-10-12')) === 'bio' && (await binsOf(a, '2026-10-19')) === 'bio');
 check('…plain "Restmüll" without the area number', /Donnerstag, 15\. Oktober: Restmüll$/.test((await cell(a, '2026-10-15')).label) && (await ftext(a, '#mu-foot')) === 'Restmüll Biotonne Gelber Sack Altpapier', await ftext(a, '#mu-foot'));
+const calHref = page => page.evaluate(() => Array.from(document.querySelectorAll('#mu-remind a[href^="webcal:"]')).map(x => x.getAttribute('href')));
+const calBase = 'webcal://' + new URL(server.url).host + '/kalender/';
+check('now the card offers the calendar of exactly these bins (area 2: Restmüll, Bio, Gelber Sack, Altpapier)', (await calHref(a)).join() === calBase + 'muell-b2-35.ics' && /19 Uhr am Abend vor jeder Abholung/.test(await text(a, '#mu-remind')), (await calHref(a)).join());
+{
+  const res = await fetch(server.url + 'kalender/muell-b2-35.ics');
+  const body = await res.text();
+  const days = Mu.schedule({ area: 2, have: { gt: false } });
+  check('…the file is served as a calendar, one all-day event per pickup day of these bins', res.status === 200 && /^text\/calendar/.test(res.headers.get('content-type')) && body.startsWith('BEGIN:VCALENDAR\r\n') && /X-WR-CALNAME:Müllabfuhr\r\n/.test(body) && (body.match(/BEGIN:VEVENT/g) || []).length === days.size && days.size > 40, res.status + ' ' + res.headers.get('content-type') + ' ' + days.size);
+  check('…Thursday 12 November: Restmüll and yellow sack, alert at 19:00 the evening before', /DTSTART;VALUE=DATE:20261112\r\nDTEND;VALUE=DATE:20261113\r\nSUMMARY:Müll: Restmüll\\, Gelber Sack\r\nTRANSP:TRANSPARENT\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Müll: Restmüll\\, Gelber Sack\r\nTRIGGER:-PT5H\r\n/.test(body) && /DTSTART;VALUE=DATE:20261019\r\nDTEND;VALUE=DATE:20261020\r\nSUMMARY:Müll: Biotonne\r\n/.test(body) && !/Gelbe Tonne/.test(body));
+}
+await a.evaluate(() => document.addEventListener('click', e => { if (e.target.closest('a[href^="webcal:"]')) e.preventDefault(); }, true));   // a test browser has no calendar to hand the link to
+await tapSel(a, '#mu-remind a[href^="webcal:"]');
+check('tapping it notes on this phone which calendar it subscribed', await waitFor(async () => /„Abonnieren“ getippt/.test(await text(a, '#mu-rm-note')), 2000) && (await a.evaluate(() => JSON.parse(localStorage.getItem('wp2.muell.cal')).names.join())) === 'muell-b2-35');
+await tapSel(a, '#mu-rm-copy');
+const clip = await a.evaluate(() => navigator.clipboard.readText().catch(e => 'ERR ' + e.message));
+check('"Link kopieren" puts the address of the file on the clipboard', clip === server.url + 'kalender/muell-b2-35.ics' && /Link kopiert/.test(await text(a, '#toast')), clip);
 
 console.log('4. the other phone');
 const B = await open('uid-anna-0002', 'b'), b = B.page;
@@ -114,6 +135,7 @@ check('B switches the yellow bin back on and adds the ash bin: A sees it live', 
 await a.evaluate(() => document.querySelector('#mu-fwd').click());
 check('…the ash bin comes with the Restmüll of area 2 in November', (await binsOf(a, '2026-11-12')) === 'rest,asche,gs' && /Restmüll, Aschentonne, Gelber Sack/.test((await cell(a, '2026-11-12')).label), (await cell(a, '2026-11-12')).label);
 await a.evaluate(() => document.querySelector('#mu-today').click());
+check('A\'s card now offers the calendar of the new choice and says the old one should go', await waitFor(async () => (await calHref(a)).join() === calBase + 'muell-b2-3f.ics', 4000) && /Eure Tonnen haben sich geändert/.test(await text(a, '#mu-rm-note')) && /warn/.test(await a.evaluate(() => document.querySelector('#mu-rm-note').className)), (await calHref(a)).join());
 
 console.log('5. closing the sheet, errors');
 await tapSel(b, '#mu-set');
@@ -137,6 +159,10 @@ check('Enter in the street field takes the first match', (await b.$eval('#mu-str
 await tapSel(b, '#mu-save');
 check('area 1 is stored with its street; A follows', await waitFor(() => { const d = muDoc(); return d.area === 1 && d.street === 'Wiener Straße'; }, 4000) && await waitFor(async () => (await text(a, '#mu-cap')) === 'Wiener Straße, Bereich 1' && (await binsOf(a, '2026-10-12')) === 'rest,bio', 4000));
 
+put('settings/muell', { v: 1, area: 1, street: 'Hauptstraße', have: { rest: true, bio: true, gt: true, gs: true, ap: true, ap3: true, c2: true } });
+check('collections for housing estates come as extra calendars', await waitFor(async () => (await calHref(a)).join() === [calBase + 'muell-b1-3d.ics', calBase + 'muell-ap3.ics', calBase + 'muell-c2.ics'].join(), 4000) && /\+ Altpapier 3-wöchig/.test(await text(a, '#mu-remind')) && /Links kopieren/.test(await text(a, '#mu-remind')), (await calHref(a)).join());
+put('settings/muell', { v: 1, area: 1, have: Object.fromEntries(Mu.KINDS.map(k => [k.id, false])) });
+check('with no bins at all there is no calendar to offer', await waitFor(async () => !(await visible(a, '#mu-remind')), 4000));
 put('settings/muell', { area: 'x', street: '<img src=x onerror=alert(1)>', have: { rest: 'no', bio: 7 } });
 check('a broken document falls back to the plain plan, nothing of it gets into the page', await waitFor(async () => (await text(a, '#mu-cap')) === 'Abfuhrplan 2026', 4000) && (await a.evaluate(() => !document.querySelector('#screen-muell img'))) && (await binsOf(a, '2026-10-12')) === 'rest,bio');
 put('settings/muell', { v: 1, area: 1, street: 'Hauptstraße', have: { rest: true, bio: true, gt: true, gs: true, ap: true } });

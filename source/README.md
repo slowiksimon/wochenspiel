@@ -9,6 +9,7 @@ Die App, die im Hauptverzeichnis dieses Repos liegt (`index.html`, `sw.js`, `man
 | `src/app.js` | Wochenansicht: Nest, Wochenleiste, Aufgaben, Verschieben per Gedrückthalten, Dialoge für Aufgabe, Einstellungen und „Wer bist du?“ |
 | `src/lists.js`, `src/lists-core.js` | Einkaufsliste und Wunschliste (Bildschirme, Dialoge, Listen einfügen, Regeln für Titel, Preise, Links) |
 | `src/muell.js`, `src/muell-core.js`, `src/muell-data.js` | Müllplan Pfaffstätten: Monatsansicht, nächste Abholung, „Eure Tonnen“ (Straße, Tonnen); Termine und Straßen aus dem Abfuhrplan 2026 des GVA Baden |
+| `src/muell-ics.js` | Kalenderdateien zum Abonnieren (Erinnerung um 19 Uhr am Vorabend), eine je Restmüll-Bereich und Tonnen-Kombination; der Build schreibt sie nach `dist/kalender/` |
 | `src/shell.js`, `src/codec.js`, `src/adapter.js` | Einrichtung, Einladungslink und QR-Code, Anbindung an Firestore (mit Offline-Verhalten) |
 | `src/nest.js`, `src/nav.js`, `src/inert.js`, `src/sheet.js` | Nest-Zeichnung und App-Icon, Tab-Leiste, Sperren der Seite hinter Dialogen, Rahmen der Dialoge |
 | `src/style.css`, `src/lists.css`, `src/muell.css`, `src/shell.css` | Gestaltung (Design „Nest“: Stroh, Papier, Walnuss; Blau = Simon/Person 1, Rot = Anna/Person 2) |
@@ -24,7 +25,7 @@ npm install
 npm run build          # schreibt dist/
 ```
 
-Die Dateien aus `dist/` ins Hauptverzeichnis des Repos kopieren, committen und pushen. GitHub Pages liefert sie aus. Die Handys holen sich die neue Version beim nächsten Start (Service Worker: App einmal ganz schließen und neu öffnen). Die Daten liegen in Firebase und bleiben dabei erhalten.
+Die Dateien aus `dist/` (samt Ordner `kalender/`) ins Hauptverzeichnis des Repos kopieren, committen und pushen. GitHub Pages liefert sie aus. Die Handys holen sich die neue Version beim nächsten Start (Service Worker: App einmal ganz schließen und neu öffnen). Die Daten liegen in Firebase und bleiben dabei erhalten.
 
 `npm run icons` erzeugt die PNG-Icons neu aus `assets/icon.svg` (braucht Chromium und ImageMagick).
 
@@ -45,7 +46,7 @@ pip install pdfplumber            # dazu poppler (pdftotext)
 python3 tools/muellplan.py Pfaffstaetten_2027_web.pdf src/muell-data.js
 ```
 
-Das Skript prüft jede Zeile (Wochentag, Farbe der Zelle, Feiertage) und den Rhythmus jeder Tonne und schreibt nur, wenn alles stimmt. Die Unit-Tests in `tests/unit.mjs` prüfen die Daten von 2026 (Anzahl, Wochentage, Abstände) und müssen für ein neues Jahr angepasst werden. Danach bauen und veröffentlichen wie oben.
+Das Skript prüft jede Zeile (Wochentag, Farbe der Zelle, Feiertage) und den Rhythmus jeder Tonne und schreibt nur, wenn alles stimmt. Beim nächsten Build entstehen daraus auch die Kalenderdateien neu; wer abonniert hat, bekommt die neuen Termine von selbst. Die Unit-Tests in `tests/unit.mjs` prüfen die Daten von 2026 (Anzahl, Wochentage, Abstände) und müssen für ein neues Jahr angepasst werden. Danach bauen und veröffentlichen wie oben.
 
 ## Datenmodell (Firestore, `rooms/{Haushalt}/…`)
 

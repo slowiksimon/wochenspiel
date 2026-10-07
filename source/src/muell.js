@@ -8,7 +8,9 @@ import { toast } from './toast.js';
 import { nestSvg, DAY } from './nest.js';
 import { openSheet, closeSheet, sheetBar } from './sheet.js';
 
+
 const CACHE = 'wp2.muell';                     // the last known choice, so the screen is right before the database answers
+const SUBSCRIBED = 'wp2.muell.cal';            // which calendars this phone was sent to subscribe (see paintRemind)
 const NS = 'http://www.w3.org/2000/svg';
 const tick = () => { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* not supported */ } };
 
@@ -57,6 +59,7 @@ function build() {
   el.grid = h('div', { class: 'mu-grid', id: 'mu-grid', role: 'group' });
   el.foot = h('div', { class: 'mu-foot', id: 'mu-foot' });
   el.soon = h('div', { class: 'mu-soon', id: 'mu-soon' });
+  el.remind = h('section', { class: 'card mu-remind', id: 'mu-remind', 'aria-label': 'Erinnerung am Vorabend' });
   screen.append(
     h('header', { class: 'hero hero-list hero-muell straw' }, deco.content.firstElementChild,
       h('div', { class: 'hero-in' },
@@ -71,6 +74,7 @@ function build() {
         h('div', { class: 'mu-mhead' }, el.title, el.today, h('div', { class: 'mu-navs' }, el.prev, el.nextM)),
         h('div', { class: 'mu-wk', 'aria-hidden': 'true' }, M.DAY_SHORT.map(s => h('span', { text: s }))),
         el.grid, el.foot),
+      el.remind,
       el.soon,
       info()));
   S.ym = clampYm(ymOf(new Date()));
@@ -103,6 +107,7 @@ function render() {
   paintHero(now);
   paintPrompt();
   paintMonth(now);
+  paintRemind();
   paintSoon(now);
   paintTab(now);
 }
@@ -205,6 +210,44 @@ function paintSoon(now) {
         h('span', { class: 'mu-when2', 'aria-hidden': 'true' },
           h('span', { class: 'mu-bins' }, x.events.map(e => glyph(e.kind))),
           h('span', { class: 'mu-rel', text: M.DAY_LONG[M.wd(x.date)] + ', ' + M.inDays(x.date, now) })))))));
+}
+
+// "Erinnerung am Vorabend": the phone's own calendar reminds at 19:00 the evening before every pickup. The app links to the
+// calendar file that fits the household's choice (all of them are made by build.mjs); webcal:// hands it to the calendar,
+// which subscribes and refreshes it, so a new year's plan arrives by itself.
+function subscribed() { try { return JSON.parse(localStorage.getItem(SUBSCRIBED) || 'null'); } catch (e) { return null; } }
+const calUrl = (name, scheme) => { const u = new URL('kalender/' + name + '.ics', location.href); u.hash = ''; u.search = ''; return scheme ? scheme + u.href.slice(u.protocol.length) : u.href; };
+function paintRemind() {
+  const c = M.calendars(S.set);
+  if (!c.needsArea && !c.names.length) { el.remind.hidden = true; return; }
+  el.remind.hidden = false;
+  const head = text => h('div', { class: 'mu-rm-top' },
+    h('span', { class: 'mu-rm-ic', 'aria-hidden': 'true' }, ico('bell')),
+    h('div', { class: 'mu-rm-t' }, h('h3', { text: 'Erinnerung am Vorabend' }), h('p', { text })));
+  if (c.needsArea) {
+    el.remind.replaceChildren(head('Wählt zuerst eure Straße, dann kennt der Kalender euren Restmüll-Tag.'),
+      h('div', { class: 'mu-rm-acts' }, h('button', { type: 'button', class: 'mu-rm-btn', id: 'mu-rm-street', onclick: () => binsSheet(true) }, 'Straße wählen')));
+    return;
+  }
+  const before = subscribed(), same = before && Array.isArray(before.names) && before.names.join() === c.names.join();
+  const note = h('p', { class: 'mu-rm-note' + (before && !same ? ' warn' : ''), id: 'mu-rm-note', role: 'status',
+    text: !before ? 'Auf jedem Handy einmal. Neue Abfuhrpläne kommen von selbst dazu.'
+      : same ? 'Im Kalender auf „Abonnieren“ getippt? Dann seid ihr fertig. Der Kalender heißt „Müllabfuhr“.'
+        : 'Eure Tonnen haben sich geändert. Abonniert den Kalender neu und löscht danach den alten im Kalender.' });
+  const mark = () => {
+    try { localStorage.setItem(SUBSCRIBED, JSON.stringify({ names: c.names, at: Date.now() })); } catch (e) { /* only the note depends on it */ }
+    setTimeout(paintRemind, 300);
+  };
+  const subs = c.names.map((n, i) => h('a', { class: 'mu-rm-btn' + (i ? ' alt' : ''), href: calUrl(n, 'webcal:'), dataset: { cal: n }, onclick: mark },
+    i ? '+ ' + M.KIND[n.slice(6)].sheet : 'Im Kalender abonnieren'));
+  const copy = h('button', { type: 'button', class: 'mu-rm-copy', id: 'mu-rm-copy', onclick: async () => {
+    const urls = c.names.map(n => calUrl(n)).join('\n');
+    let ok = false;
+    try { await navigator.clipboard.writeText(urls); ok = true; } catch (e) { ok = false; }
+    toast(ok ? (c.names.length > 1 ? 'Links kopiert' : 'Link kopiert') : 'Kopieren ging nicht. Der Link: ' + urls);
+  } }, c.names.length > 1 ? 'Links kopieren' : 'Link kopieren');
+  el.remind.replaceChildren(head('Euer iPhone meldet sich um ' + M.ALERT_HOUR + ' Uhr am Abend vor jeder Abholung, passend zu euren Tonnen.'),
+    h('div', { class: 'mu-rm-acts' }, subs, copy), note);
 }
 
 // a dot on the tab when something goes out today or tomorrow

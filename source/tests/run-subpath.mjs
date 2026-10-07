@@ -44,6 +44,11 @@ check('invite link points into the sub-path', link.startsWith(URL0 + '#j='), lin
 await tapLabel(A.page, 'Weiter');
 await sleep(400);
 check('game runs under the sub-path', (await tiles(A.page)) > 3);
+server.put('wochenspiel-test1', 'rooms/' + C.extractInvite(link).room + '/settings/muell', { v: 1, area: 1, have: {} });
+await waitFor(() => A.page.evaluate(() => !!document.querySelector('#mu-remind a[href^="webcal:"]')), 5000);
+const cal = await A.page.evaluate(() => (document.querySelector('#mu-remind a[href^="webcal:"]') || {}).href || '');
+const calGot = await A.page.evaluate(u => fetch(u).then(r => r.status + ' ' + r.headers.get('content-type')).catch(e => 'ERR ' + e.message), cal.replace(/^webcal:/, 'http:'));
+check('the waste calendar link points into the sub-path, and the file is there', cal === URL0.replace(/^http:/, 'webcal:') + 'kalender/muell-b1-3d.ics' && /^200 text\/calendar/.test(calGot), cal + ' ' + calGot);
 
 const B = await phone(browser, URL0);
 await B.page.goto(link, { waitUntil: 'load' });

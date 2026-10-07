@@ -10,7 +10,7 @@ import * as Muell from './muell.js';
 import { iconSvg } from './nest.js';
 import { lock, unlock } from './inert.js';
 
-const VERSION = '2.1';
+const VERSION = '2.2';
 const BUILD = ((document.querySelector('meta[name="ws-build"]') || {}).content || '').slice(0, 6);
 const LS = { conn: 'ws.v1', uid: 'ws.uid', me: 'wp2.me', installSeen: 'ws.install', draft: 'ws.draft' };
 const CONSOLE_URL = 'https://console.firebase.google.com/';

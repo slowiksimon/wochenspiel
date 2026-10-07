@@ -222,4 +222,29 @@ const mc = (y, m) => { const c = Mu.monthCells(y, m); return c.findIndex(Boolean
 check('month view: Monday first, blanks before the 1st and after the last day', mc(2026, 9) === '3/31/35' && mc(2026, 1) === '6/28/35' && mc(2026, 5) === '0/30/35' && mc(2026, 7) === '5/31/42', [mc(2026, 9), mc(2026, 1), mc(2026, 5), mc(2026, 7)].join(' '));
 check('month range: the months of the plan, and the current month when it lies after it', (() => { const a = Mu.monthRange(at('10-07')), b = Mu.monthRange(new Date(2027, 1, 3)); return a.lo === 2026 * 12 && a.hi === 2026 * 12 + 11 && b.lo === 2026 * 12 && b.hi === 2027 * 12 + 1; })());
 
+/* ---- waste plan: the calendars to subscribe to (reminder the evening before) ---- */
+const Ics = await import('../src/muell-ics.js');
+const cal = st => Mu.calendars(st);
+const none = Object.fromEntries(Mu.KINDS.map(k => [k.id, false]));
+check('calendar: without an area the Restmüll cannot be placed', cal(null).needsArea && cal(null).names.length === 0);
+check('calendar: one file per area and set of bins', cal({ area: 1 }).names.join() === 'muell-b1-3d' && cal({ area: 2, have: { gt: false } }).names.join() === 'muell-b2-35' && cal({ area: 2, have: { asche: true } }).names.join() === 'muell-b2-3f');
+check('calendar: without Restmüll and ash bin the area does not matter', (() => { const c = cal({ have: { rest: false, gs: false, ap: false } }); return !c.needsArea && c.names.join() === 'muell-b1-0c'; })());
+check('calendar: housing estate collections as extra calendars; no bins, no calendar', cal({ area: 1, have: { ap3: true, c4: true } }).names.join() === 'muell-b1-3d,muell-ap3,muell-c4' && cal({ have: none }).names.length === 0 && !cal({ have: none }).needsArea);
+const calFiles = Ics.allCalendars();
+check('calendar files: one for every choice the app can link to', calFiles.size === 129 && (() => {
+  for (let m = 0; m < 512; m++) for (const area of [0, 1, 2]) {
+    const have = Object.fromEntries(Mu.KINDS.map((k, i) => [k.id, !!(m & (1 << i))]));
+    for (const n of cal({ area, have }).names) if (!calFiles.has(n)) return false;
+  }
+  return true;
+})());
+const f3d = calFiles.get('muell-b1-3d'), n3d = Mu.schedule({ area: 1 }).size;
+check('calendar format: CRLF only, no line over 75 octets, ends properly', !/[^\r]\n/.test(f3d) && f3d.split('\r\n').every(l => new TextEncoder().encode(l).length <= 75) && f3d.startsWith('BEGIN:VCALENDAR\r\nVERSION:2.0\r\n') && f3d.endsWith('END:VCALENDAR\r\n'));
+check('calendar content: one all-day event per pickup day, each with an alert at 19:00 the evening before', (f3d.match(/BEGIN:VEVENT/g) || []).length === n3d && (f3d.match(/TRIGGER:-PT5H\r\n/g) || []).length === n3d && /DTSTART;VALUE=DATE:20261012\r\nDTEND;VALUE=DATE:20261013\r\nSUMMARY:Müll: Restmüll\\, Biotonne\r\n/.test(f3d) && /DTSTART;VALUE=DATE:20261231/.test(f3d) === false);
+check('calendar: an event that ends in the next month or year is right', /DTSTART;VALUE=DATE:20261130\r\nDTEND;VALUE=DATE:20261201\r\n/.test(f3d) && /DTSTART;VALUE=DATE:20261228\r\nDTEND;VALUE=DATE:20261229\r\n/.test(f3d));
+check('calendar: unique, stable event ids; the same plan gives the same file', (() => { const u = f3d.match(/UID:[^\r]+/g); return new Set(u).size === u.length && u[0] === 'UID:20260105-b1-3d@slowik-muell' && Ics.allCalendars().get('muell-b2-3f') === calFiles.get('muell-b2-3f'); })());
+check('calendar: area named only where it matters', /Bereich 1/.test(calFiles.get('muell-b1-01')) && !/Bereich/.test(calFiles.get('muell-b1-0c')) && /X-WR-CALNAME:Müllabfuhr: Altpapier 3-wöchig\r\n/.test(calFiles.get('muell-ap3')));
+check('fold: long lines split without cutting a character', (() => { const t = 'X:' + 'ü'.repeat(80); const f = Ics.foldLine(t); return f.split('\r\n').every(l => new TextEncoder().encode(l).length <= 75) && f.replace(/\r\n /g, '') === t && f.split('\r\n').length === 3; })());
+check('text escaping: backslash, semicolon, comma, line break', Ics.escText('a\\b;c,d\ne') === 'a\\\\b\\;c\\,d\\ne');
+
 process.exitCode = done() ? 1 : 0;

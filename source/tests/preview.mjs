@@ -121,6 +121,8 @@ if (want('muell') || want('muellsheet')) {
     await p.evaluate(() => window.scrollTo(0, document.querySelector('#mu-cal').getBoundingClientRect().top + window.scrollY - 60)); await sleep(300);
     await tapSel(p, '#mu-grid [data-key="' + (process.env.PICK || '2026-10-12') + '"]'); await sleep(1000);
     await shot(P, 'muell2');
+    await p.evaluate(() => document.querySelector('#mu-remind').scrollIntoView({ block: 'center' })); await sleep(300);
+    await shot(P, 'muell-remind');
     await p.evaluate(() => window.scrollTo(0, 99999)); await sleep(300);
     await shot(P, 'muell3');
   }

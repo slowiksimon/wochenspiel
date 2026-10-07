@@ -74,7 +74,8 @@ console.log('2. joined phone without network');
   check('Offline notice only when the browser says so (here: browser is online, server unreachable)', !/Verbindung unterbrochen/.test(await text(P.page, '#notice')), await text(P.page, '#notice'));
 
   // tick a tile through the UI
-  const key = W + '_t-eins_2';
+  // the real clock runs here: the tile of today (the game lists one day at a time, today first) in this week
+  const key = C.mondayKey(new Date()) + '_t-eins_' + ((new Date().getDay() + 6) % 7);
   await tapSel(P.page, '.tile[data-key="' + key + '"]');
   await sleep(1500);
   const cls = await P.page.evaluate(k => document.querySelector('.tile[data-key="' + k + '"]').className, key);

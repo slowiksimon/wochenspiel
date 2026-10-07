@@ -44,7 +44,7 @@ export const longDate = d => DAY_LONG[wd(d)] + ', ' + d.getDate() + '. ' + MONTH
 /* ---------- streets ---------- */
 // "Türkengasse", "tuerkeng.", "TURKEN" and "Hauptstr. 12a" all find their street: case, accents, ß/ss, ä/ae, spaces,
 // dots and hyphens do not matter, and a house number is ignored.
-export const fold = s => String(s == null ? '' : s).toLocaleLowerCase('de').replace(/ß/g, 'ss').normalize('NFD').replace(/[̀-ͯ]/g, '')
+export const fold = s => String(s == null ? '' : s).toLocaleLowerCase('de').replace(/ß/g, 'ss').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u').replace(/[^a-z0-9]/g, '');
 const STREETS = PLAN.streets1.map(name => ({ name, area: 1 })).concat(PLAN.streets2.map(name => ({ name, area: 2 })));
 export function streetArea(name) {
@@ -156,6 +156,23 @@ export function monthCells(year, month) {
   while (cells.length % 7) cells.push(null);
   return cells;
 }
+/* ---------- the calendars to subscribe to (written by build.mjs, see muell-ics.js) ---------- */
+// One file per Restmüll area and set of household bins (bit i of the code = CAL_BITS[i]), plus one per housing-estate
+// collection, which only a few households have. A static website cannot make a file per request, so all of them exist.
+export const CAL_BITS = ['rest', 'asche', 'bio', 'gt', 'gs', 'ap'];
+export const ALERT_HOUR = 19;                   // the calendar's alert: 19:00 the evening before a pickup
+export const CAL_EXTRA = ['ap3', 'c4', 'c2'];
+export const calName = (area, code) => 'muell-b' + area + '-' + code.toString(16).padStart(2, '0');
+// the calendar files that fit a household's choice; without a known area the Restmüll (and ash bin) cannot be placed
+export function calendars(settings) {
+  const s = cleanSettings(settings);
+  let code = 0;
+  CAL_BITS.forEach((k, i) => { if (s.have[k]) code |= 1 << i; });
+  const needsArea = !s.area && (s.have.rest || s.have.asche);
+  const names = needsArea ? [] : (code ? [calName(s.area || 1, code)] : []).concat(CAL_EXTRA.filter(k => s.have[k]).map(k => 'muell-' + k));
+  return { needsArea, names };
+}
+
 // the months the view can show: those of the plan, and the current one if it lies outside the plan
 export function monthRange(now, plan = PLAN) {
   const lo = Math.min(plan.year * 12, now.getFullYear() * 12 + now.getMonth());

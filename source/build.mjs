@@ -8,6 +8,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { nestSvg, eggD, DAY, HOT } from './src/nest.js';
+import { allCalendars } from './src/muell-ics.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.join(here, 'src');
@@ -88,5 +89,10 @@ const html = template.replace('__BUILD__', version);
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
 fs.writeFileSync(path.join(OUT, 'sw.js'), read(path.join(here, 'src/sw.js')).replace('__VERSION__', version));
 
+/* 6. the waste calendars to subscribe to (see src/muell-ics.js): one file per Restmüll area and set of bins */
+fs.mkdirSync(path.join(OUT, 'kalender'));
+const cals = allCalendars();
+for (const [name, text] of cals) fs.writeFileSync(path.join(OUT, 'kalender', name + '.ics'), text);
+
 const size = fs.statSync(path.join(OUT, 'index.html')).size;
-console.log((FAKE ? 'dist-fake' : 'dist') + ': index.html ' + Math.round(size / 1024) + ' KB, version ' + version);
+console.log((FAKE ? 'dist-fake' : 'dist') + ': index.html ' + Math.round(size / 1024) + ' KB, version ' + version + ', ' + cals.size + ' calendars');

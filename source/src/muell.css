@@ -76,6 +76,22 @@
 .mu-legend li{display:flex;align-items:center;gap:6px}
 .mu-legend .bin{width:11px;height:13px}
 
+/* the reminder the evening before, through the phone's calendar */
+.mu-wrap .mu-remind{margin-top:14px;padding:16px 18px 18px}
+.mu-rm-top{display:flex;align-items:flex-start;gap:14px}
+.mu-rm-ic{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--soft)}
+.mu-rm-ic .ico{width:22px;height:22px}
+.mu-rm-t{min-width:0}
+.mu-rm-t h3{font-size:17px;font-weight:800;line-height:22px}
+.mu-rm-t p{margin-top:2px;font-size:14px;font-weight:500;line-height:19px;color:var(--mut)}
+.mu-rm-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:14px}
+.mu-rm-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:22px;background:var(--btn);color:var(--btn-fg);font-size:15px;font-weight:700;line-height:18px;text-align:center;text-decoration:none}
+.mu-rm-btn.alt{background:var(--seg);color:var(--ink)}
+.mu-rm-btn:active{transform:scale(.97)}
+.mu-rm-copy{min-height:44px;padding:0 2px;font-size:14px;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.mu-rm-note{margin-top:10px;font-size:13px;font-weight:500;line-height:17px;color:var(--mut)}
+.mu-rm-note.warn{color:var(--ink);font-weight:700}
+
 /* the dates after the next one */
 .mu-h{margin:26px 4px 12px;font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:30px}
 .mu-row{gap:14px;min-height:64px;padding:9px 16px}
