@@ -1,0 +1,65 @@
+/* Standalone shell: setup / join / invite screens and the connection block in the settings sheet. Nest style. */
+html.ws-open{overflow:hidden}
+.ws{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;background:var(--paper);color:var(--ink)}
+.ws[hidden]{display:none}
+.ws-bar{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,calc((100% - 560px) / 2 + 14px)) 14px;border-radius:0 0 28px 28px}
+.ws-bar h2{font-size:17px;font-weight:800;text-align:center;white-space:nowrap}
+.ws-back{justify-self:start;min-height:44px;padding:0 8px;color:var(--hero-ink);font-size:15px;font-weight:700;white-space:nowrap}
+.ws-step{justify-self:end;padding-right:6px;font-size:13px;font-weight:700;color:var(--hero-mut)}
+.ws-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,0px)}
+.ws-wrap{max-width:560px;margin-inline:auto;padding:24px 16px 56px;display:flex;flex-direction:column;gap:16px}
+.ws .lead{color:var(--mut);font-weight:500;font-size:16px;line-height:1.4}
+.ws-note{font-size:13px;font-weight:500;color:var(--mut)}
+.ws-center{text-align:center}
+.ws-err{color:var(--danger);font-weight:700;font-size:14px}
+
+.ws-hero{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:3vh}
+.app-icon{display:block;width:96px;height:96px;border-radius:22px;box-shadow:0 10px 24px rgba(180,130,20,.28)}
+.ws-hero h3{font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:1.1;text-align:center}
+
+.ws-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-height:58px;padding:10px 20px;border-radius:29px;background:var(--btn);color:var(--btn-fg);font:700 17px/1.2 var(--font);text-align:center;text-decoration:none}
+.ws-btn:active{transform:scale(.98)}
+.ws-btn.alt{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.ws-btn-s{font-size:13px;font-weight:500;opacity:.85}
+.ws-btn[disabled]{opacity:.65;cursor:default}
+.ws-btn.busy .ws-btn-l::after{content:"";display:inline-block;width:14px;height:14px;margin-left:10px;vertical-align:-2px;border-radius:50%;border:3px solid currentColor;border-right-color:transparent;animation:wsspin .8s linear infinite}
+
+.ws-dots{display:flex;gap:6px;justify-content:center;align-items:center}
+.ws-dots i{width:8px;height:8px;border-radius:4px;background:var(--line)}
+.ws-dots i.done{background:var(--stroh)}
+.ws-dots i.on{width:24px;background:var(--ink)}
+
+.ws-ol{counter-reset:s;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px}
+.ws-ol>li{counter-increment:s;display:grid;grid-template-columns:32px minmax(0,1fr);gap:14px;align-items:start}
+.ws-ol>li::before{content:counter(s);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--btn);color:var(--btn-fg);font-size:15px;font-weight:800;line-height:1}
+.ws-li{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-top:4px;font-weight:500;line-height:1.4;min-width:0;overflow-wrap:anywhere}
+.ws-li b{font-weight:800}
+.ws-li .ws-btn{width:auto;align-self:stretch}
+.ws-code{align-self:stretch;margin:0;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);font:500 12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);-webkit-user-select:all;user-select:all}
+
+.ws-field{display:flex;flex-direction:column;gap:8px}
+.ws-field label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--mut)}
+.ws textarea{min-height:104px;font:500 16px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ws input[type="text"]{font-size:16px}
+
+.ws-wait{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:12vh;text-align:center;font-weight:500;color:var(--mut)}
+.ws-spin{width:36px;height:36px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--ink);animation:wsspin .8s linear infinite}
+@keyframes wsspin{to{transform:rotate(360deg)}}
+
+.ws-invite{display:flex;flex-direction:column;gap:14px}
+.ws-qr{width:min(78vw,300px);margin-inline:auto;padding:12px;border-radius:24px;background:#fff;box-shadow:0 1px 0 var(--hair),0 12px 26px -14px rgba(42,33,27,.4)}
+.ws-qr svg{display:block;width:100%;height:auto;stroke:none;fill:none}
+
+.ws-set{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:20px;background:var(--card)}
+.ws-set h4{margin:0;color:var(--ink);font-size:16px;font-weight:800}
+.ws-meta{font-size:13px;font-weight:500;color:var(--mut)}
+.ws-set-row{display:flex;gap:8px;flex-wrap:wrap}
+.ws-mini{min-height:44px;padding:0 16px;border-radius:22px;background:var(--seg);color:var(--ink);font-size:14px;font-weight:700}
+.ws-del{align-self:flex-start;min-height:44px;padding:0 6px;color:var(--danger);font-weight:700}
+.ws-del.is-armed{padding:0 18px;border-radius:22px;background:var(--danger-bg);color:#fff}
+
+@media (prefers-reduced-motion:reduce){.ws-spin,.ws-btn.busy .ws-btn-l::after{animation-duration:2s!important}}
+@media (max-width:359px){
+  .ws-bar{grid-template-columns:auto minmax(0,1fr) auto;gap:4px;padding-left:8px;padding-right:10px}
+  .ws-bar h2{overflow:hidden;text-overflow:ellipsis;font-size:16px}
+}

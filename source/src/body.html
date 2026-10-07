@@ -1,0 +1,61 @@
+<div class="app" id="app">
+<section class="screen" id="screen-week" aria-label="Woche">
+  <header class="hero straw" id="bar">
+    <div class="hero-in">
+      <div class="head">
+        <div class="cap-row">
+          <p class="cap" id="range"></p>
+          <button type="button" class="today-pill" id="thisweek" hidden>Heute</button>
+        </div>
+        <div class="ttl-row"><h1 class="ttl" id="kw">Woche</h1></div>
+        <div class="head-btns">
+          <button type="button" class="rbtn" id="prev" aria-label="Vorherige Woche"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></button>
+          <button type="button" class="rbtn" id="next" aria-label="Nächste Woche"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
+          <button type="button" class="plus-btn" id="add-top" aria-label="Aufgabe hinzufügen"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button>
+        </div>
+      </div>
+      <div class="nest" id="ring" role="img" aria-label="Wochenfortschritt">
+        __NEST__
+        <div class="nest-c" id="quest" aria-live="polite">
+          <div class="nest-num" id="hero-num">0</div>
+          <svg class="ico nest-ok" id="hero-ok" aria-hidden="true" focusable="false" hidden><use href="#i-check"/></svg>
+          <p class="nest-lbl" id="hero-lbl"></p>
+        </div>
+      </div>
+      <div class="legend is-wait" id="pcs"></div>
+    </div>
+  </header>
+  <div class="stripbar" id="stripbar">
+    <div class="strip" id="strip" role="group" aria-label="Tage der Woche"></div>
+  </div>
+  <main class="week-main">
+    <div id="hint"></div>
+    <div id="notice"></div>
+    <div class="listhead">
+      <div class="lh-t"><h2 id="lh-title">Heute</h2><span class="lh-sub" id="lh-sub"></span></div>
+      <div class="me-line" id="me-line"></div>
+    </div>
+    <div class="card" id="days" aria-label="Aufgaben des Tages"></div>
+  </main>
+</section>
+<section class="screen" id="screen-shop" aria-label="Einkauf" hidden></section>
+<section class="screen" id="screen-wish" aria-label="Wünsche" hidden></section>
+</div>
+<nav class="tabbar" id="tabbar" aria-label="Bereiche" style="--i:0">
+  <svg class="egg" viewBox="0 0 52 62" aria-hidden="true" focusable="false"><path d="__EGG__"/></svg>
+  <div class="tabs-in">
+    <button type="button" class="tab" id="tab-week" aria-current="page"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-week"/></svg><span>Woche</span></button>
+    <button type="button" class="tab" id="open-shop"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-cart"/></svg><span>Einkauf</span><b class="tab-n" id="n-shop" hidden></b></button>
+    <button type="button" class="tab" id="open-wish"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg><span>Wünsche</span><b class="tab-n" id="n-wish" hidden></b></button>
+    <button type="button" class="tab" id="open-settings" aria-haspopup="dialog"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-user"/></svg><span>Ich</span></button>
+  </div>
+</nav>
+<div class="dock" id="dock" aria-hidden="true">
+  <div class="zone who-a" data-drop="who:a"><span class="ini" data-z="badge"></span><span class="zl" data-z="name"></span><span class="zs">Abgeben</span></div>
+  <div class="zone" data-drop="skip"><svg class="ico zi" aria-hidden="true" focusable="false"><use href="#i-palm"/></svg><span class="zl">Entfällt</span><span class="zs">diese Woche</span></div>
+  <div class="zone who-b" data-drop="who:b"><span class="ini" data-z="badge"></span><span class="zl" data-z="name"></span><span class="zs">Abgeben</span></div>
+</div>
+<div class="fx" id="fx" aria-hidden="true"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" tabindex="-1" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<div class="sr" id="live" aria-live="polite"></div>

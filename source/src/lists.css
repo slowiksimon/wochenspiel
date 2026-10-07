@@ -1,0 +1,84 @@
+/* Shopping list and wish list, in the same Nest style as the week screen. */
+
+/* the heroes of the two list screens: the same straw field, with a faint nest outline in the corner */
+.hero-list{padding-bottom:28px}
+.hero-deco{inset:auto;right:-157px;top:-186px;width:400px;height:396px;--ring-ghost:var(--ring-deco);--gw:2.5;pointer-events:none}
+.head-btns .pillbtn{margin-top:2px}
+.pillbtn{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px 0 12px;border-radius:20px;background:var(--field);color:var(--hero-ink);font-size:14px;font-weight:700;white-space:nowrap}
+.pillbtn .ico{width:19px;height:19px;stroke-width:1.9}
+.pillbtn:active{transform:scale(.96)}
+.li-add{display:flex;align-items:center;gap:12px;height:56px;margin:24px 16px 0;padding:0 8px 0 20px;border-radius:28px;background:var(--field)}
+.li-add:focus-within{box-shadow:0 0 0 2.5px var(--hero-ink)}
+.li-add>.ico{width:22px;height:22px;color:var(--mut);stroke-width:2.2}
+.li-add input[type="text"]{flex:1 1 auto;min-width:0;height:100%;padding:0;border:0;border-radius:0;background:transparent;font:500 16px/20px var(--font);color:var(--ink)}
+.li-add input[type="text"]:focus-visible{outline:0}
+.li-plus{flex:none;height:40px;padding:0 18px;border-radius:20px;background:var(--btn);color:var(--btn-fg);font-size:14px;font-weight:700}
+.li-plus:active{transform:scale(.96)}
+
+/* the wish hero: what everything costs, and how that splits over the three priorities */
+.li-sum{margin:18px 20px 0;font-size:13px;font-weight:500;line-height:16px;color:var(--hero-mut)}
+.li-total{margin:2px 20px 0;font-size:46px;font-weight:700;letter-spacing:-.8px;line-height:56px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.li-bar{display:flex;gap:3px;height:8px;margin:12px 20px 0}
+.li-bar i{min-width:6px;border-radius:4px;background:var(--hero-ink)}
+.li-bar .p2{opacity:.52}
+.li-bar .p3{opacity:.22}
+
+.li-wrap{max-width:560px;margin-inline:auto;padding:18px 16px 0}
+.li-wrap .card{margin:0}
+.li-status{margin:0 0 14px;padding:12px 16px;border-radius:18px;background:var(--soft);font-size:14px;font-weight:600}
+.li-items{display:flex;flex-direction:column}
+.li-list{list-style:none;padding:0}
+.row{position:relative;display:flex;align-items:center}
+.sect{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px;margin:26px 4px 12px}
+.sect h3{display:flex;align-items:center;gap:8px;font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:34px}
+.cnt{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--seg);font-size:12px;font-weight:700;letter-spacing:0;line-height:20px}
+.clear{display:inline-flex;align-items:center;gap:6px;height:36px;font-size:14px;font-weight:700}
+.clear .ico{width:17px;height:17px;stroke-width:1.9}
+.clear.is-armed{padding:0 14px;border-radius:18px;background:var(--danger-bg);color:#fff}
+.li-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:44px 24px 10px;text-align:center;color:var(--mut);font-weight:500}
+.li-empty .eic{display:grid;place-items:center;width:64px;height:64px;margin-bottom:8px;border-radius:50%;background:var(--soft);color:var(--ink)}
+.li-empty .eic .ico{width:30px;height:30px}
+.li-empty strong{color:var(--ink);font-size:20px;font-weight:800}
+
+/* shopping rows */
+.li-main{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:14px;min-height:58px;padding:7px 4px 7px 16px;text-align:left}
+.li-main:active{background:var(--hair)}
+.li-text{flex:1 1 auto;min-width:0;font-size:17px;font-weight:600;line-height:20px;overflow-wrap:anywhere}
+.li-row.done .li-text{font-weight:500;color:var(--mut);text-decoration:line-through;text-decoration-thickness:1px}
+.li-row.done .ini{opacity:.55}
+.li-del{flex:none;display:grid;place-items:center;width:44px;align-self:stretch;color:var(--mut)}
+.li-del .ico{width:18px;height:18px}
+.li-del:active{background:var(--hair)}
+
+/* wishes */
+.li-group{display:flex;align-items:center;gap:10px;margin:24px 4px 12px;font-size:17px;font-weight:800;line-height:22px}
+.li-group:first-child{margin-top:4px}
+.beads{display:inline-flex;align-items:center;gap:4px}
+.beads i{width:8px;height:8px;border-radius:50%;border:1.4px solid var(--dash)}
+.beads i.on{background:currentColor;border-color:currentColor}
+.li-card{align-items:stretch;min-height:62px}
+.li-tick{flex:none;display:grid;place-items:center;align-self:center;width:58px;min-height:58px}
+.li-card.has-note .li-tick{align-self:flex-start;height:52px;min-height:0}
+.li-body{flex:1 1 auto;min-width:0;padding:11px 16px 11px 0;cursor:pointer}
+.li-card.has-note .li-body{padding-top:15px;padding-bottom:14px}
+.li-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.li-title{min-width:0;text-align:left;font-size:17px;font-weight:600;line-height:22px;overflow-wrap:anywhere}
+.li-price{flex:none;font-size:17px;font-weight:700;line-height:22px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.li-foot{display:flex;align-items:center;gap:6px;margin-top:1px;font-size:13px;font-weight:500;line-height:16px;color:var(--mut)}
+.li-note{margin-top:6px;font-size:14px;font-weight:400;line-height:20px;color:var(--mut2);white-space:pre-line;overflow-wrap:anywhere}
+.li-note a{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
+.li-note a .ico{width:15px;height:15px;stroke-width:2}
+.li-card.got .li-title{font-weight:500;color:var(--mut);text-decoration:line-through;text-decoration-thickness:1px}
+.li-card.got .li-price{font-weight:500;color:var(--mut)}
+
+/* the sheets of the lists sit above everything but the message bar */
+.li-sheet{z-index:80}
+.li-sheet textarea{min-height:96px}
+.li-sheet textarea#imp-t{min-height:180px}
+.li-imp-n{margin:0;font-size:14px;font-weight:600;color:var(--mut)}
+.opt .beads{min-height:14px}
+
+@media (max-width:359px){
+  .pillbtn{padding:0 12px 0 10px;font-size:13px}
+  .li-total{font-size:40px}
+}

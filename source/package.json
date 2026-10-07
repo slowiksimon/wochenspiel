@@ -1,0 +1,22 @@
+{
+  "name": "slowik",
+  "version": "2.0.0",
+  "description": "Slowik: gemeinsame Aufgaben, Einkaufsliste und Wunschliste für zwei Personen (PWA, Firebase)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:fake": "FAKE=1 node build.mjs",
+    "icons": "node make-icons.mjs",
+    "test": "bash tests/run-all.sh"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "firebase": "^12.19.0",
+    "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0",
+    "puppeteer-core": "^25.12.0"
+  }
+}
