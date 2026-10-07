@@ -1,6 +1,6 @@
 {
-  "name": "Unser Wochenspiel",
-  "short_name": "Wochenspiel",
+  "name": "Slowik",
+  "short_name": "Slowik",
   "description": "Gemeinsame Aufgaben als Spiel: abhaken, verschieben, Münzen sammeln.",
   "lang": "de",
   "start_url": "./",
