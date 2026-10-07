@@ -137,6 +137,29 @@ console.log('3. setup and join without network (real SDK errors)');
   await Q.close();
 }
 
+/* ---- 4. the waste plan with the real SDK: the household's choice is kept in its cache ---- */
+console.log('4. Müll with the real SDK');
+{
+  const P = await realPhone();
+  await joined({ cfg, room: 'realsdkmuell2345' })(P.page);
+  await P.page.goto(URL0, { waitUntil: 'load' });
+  await sleep(1200);
+  await tapSel(P.page, '#open-muell');
+  check('the Müll screen shows its month with the real bundle', await visible(P.page, '#screen-muell') && (await P.page.evaluate(() => document.querySelectorAll('#mu-grid .mu-d[data-key]').length)) >= 28);
+  await tapSel(P.page, '#mu-set');
+  await setValue(P.page, '#mu-street', 'Haydngasse');
+  await tapSel(P.page, '#mu-save');
+  await sleep(1600);
+  check('saving "Eure Tonnen" works offline with the real SDK', (await text(P.page, '#mu-cap')) === 'Haydngasse, Bereich 2' && !(await visible(P.page, '#mu-sheet')), await text(P.page, '#mu-cap'));
+  await P.page.evaluate(() => localStorage.removeItem('wp2.muell'));              // only the SDK's own cache may bring it back
+  await P.page.reload({ waitUntil: 'load' });
+  await sleep(1500);
+  await tapSel(P.page, '#open-muell');
+  check('after a reload the choice comes back from the SDK cache (IndexedDB)', !!(await waitFor(async () => (await text(P.page, '#mu-cap')) === 'Haydngasse, Bereich 2', 8000)), await text(P.page, '#mu-cap'));
+  check('no unexpected errors', P.realErrors().length === 0, P.realErrors().join('|'));
+  await P.close();
+}
+
 console.log('\nSDK console output (unique):');
 for (const l of [...new Set(logs)].slice(0, 12)) console.log('  ' + l);
 await browser.close(); await server.close();

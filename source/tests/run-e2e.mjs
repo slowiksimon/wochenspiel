@@ -274,7 +274,7 @@ console.log('4b. tabs, strip, nest, filter, zones');
   check('"Wünsche" shows the wish screen, the egg moved behind it', await visible(a, '#screen-wish') && !(await visible(a, '#screen-shop')) && (await a.evaluate(() => document.querySelector('#tabbar').style.getPropertyValue('--i'))) === '2');
   await tapSel(a, '#tab-week');
   check('"Woche" brings the week back', await visible(a, '#screen-week') && !(await visible(a, '#screen-wish')) && (await attr(a, '#tab-week', 'aria-current')) === 'page');
-  check('the tab bar has four tabs, the fourth ("Ich") opens the settings', (await a.evaluate(() => document.querySelectorAll('#tabbar .tab').length)) === 4 && /Ich/.test(await text(a, '#open-settings')));
+  check('the tab bar has five tabs, the last ("Ich") opens the settings', (await a.evaluate(() => document.querySelectorAll('#tabbar .tab').length)) === 5 && /Ich/.test(await text(a, '#open-settings')) && (await a.evaluate(() => document.querySelector('#tabbar .tab:last-child').id)) === 'open-settings');
 
   // the strip
   await showDay(a, 2);
@@ -573,7 +573,7 @@ console.log('8. settings');
   await a.evaluate(() => window.scrollTo(0, 0));
   await tapSel(a, '#open-settings');
   const blockText = await waitFor(() => text(a, '.ws-set'), 3000);
-  check('settings sheet has the connection block', /Verbindung/.test(blockText) && blockText.includes('····' + R.slice(-4).toUpperCase()) && /Online/.test(blockText) && /Version 2\.0 \([0-9a-f]{6}\)/.test(blockText), blockText);
+  check('settings sheet has the connection block', /Verbindung/.test(blockText) && blockText.includes('····' + R.slice(-4).toUpperCase()) && /Online/.test(blockText) && /Version 2\.1 \([0-9a-f]{6}\)/.test(blockText), blockText);
   await shot(a, 'settings.png');
   check('connection block shows no household secrets', !blockText.includes(R) && !/AIza/.test(blockText));
   await tapLabel(a, 'Einladen / QR-Code', '#modal');

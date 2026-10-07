@@ -1,0 +1,124 @@
+/* The waste plan ("Müll"), in the Nest style: what goes out next in the straw field, the month in a card, and little bins in
+   the colours of the real ones (grey Restmüll, brown Bio, yellow, the red lid of the paper bin). */
+:root{--bin-edge:rgba(42,33,27,.32)}
+.bin{display:block;flex:none;width:11px;height:13px;overflow:visible}
+.bin path{stroke:var(--bin-edge);stroke-width:.55;stroke-linejoin:round}
+.bin .body{fill:var(--kb)}
+.bin .lid{fill:var(--kl)}
+.k-rest,.k-c4,.k-c2{--kb:#8C857E;--kl:#69625C}
+.k-asche{--kb:#57504A;--kl:#35302B}
+.k-bio{--kb:#A0673A;--kl:#7A4B25}
+.k-gt{--kb:#F2BF1F;--kl:#D3A007}
+.k-gs{--kb:#F2BF1F;--kl:#B88700}
+.k-ap,.k-ap3{--kb:#8C857E;--kl:#D23C37}
+@media (prefers-color-scheme:dark){
+  :root{--bin-edge:rgba(0,0,0,.5)}
+  .k-rest,.k-c4,.k-c2{--kb:#A8A098;--kl:#857E77}
+  .k-asche{--kb:#7A736C;--kl:#5A534D}
+  .k-bio{--kb:#C68D58;--kl:#A06C3D}
+  .k-gt{--kb:#F5C93A;--kl:#DCAF22}
+  .k-gs{--kb:#F5C93A;--kl:#C99A12}
+  .k-ap,.k-ap3{--kb:#A8A098;--kl:#F0645B}
+}
+
+/* the hero: the next pickup */
+.mu-next{padding:16px 20px 0}
+.mu-when{font-size:42px;font-weight:800;letter-spacing:-1.2px;line-height:46px;overflow-wrap:anywhere}
+.mu-date{margin-top:2px;font-size:15px;font-weight:600;line-height:20px;color:var(--hero-mut)}
+.mu-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.mu-next .mu-chips{margin-top:16px}
+.mu-chip{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;padding:0 14px 0 11px;border-radius:17px;background:var(--seg);font-size:15px;font-weight:700;line-height:18px;white-space:nowrap}
+.hero .mu-chip{background:var(--field)}
+.mu-chip .bin{width:13px;height:15px}
+.mu-rule{margin-top:14px;font-size:13px;font-weight:500;line-height:16px;color:var(--hero-mut)}
+
+/* below the hero */
+.mu-wrap .hint{margin:0 0 14px}
+.mu-hint p{font-size:14px}
+
+/* the month */
+.mu-mhead{display:flex;align-items:center;gap:8px;padding:14px 12px 2px 20px}
+.mu-month{flex:1 1 auto;min-width:0;font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu-month span{font-weight:600;color:var(--mut)}
+.mu-navs{flex:none;display:flex;gap:6px}
+.mu-nav{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--seg);color:var(--ink)}
+.mu-nav .ico{width:20px;height:20px;stroke-width:2.2}
+.mu-nav:disabled{opacity:.3;cursor:default}
+.mu-nav:not(:disabled):active{transform:scale(.92)}
+.mu-wk,.mu-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 8px}
+.mu-wk{padding-top:10px;padding-bottom:2px}
+.mu-wk span{text-align:center;font-size:11px;font-weight:600;line-height:14px;color:var(--mut)}
+.mu-grid{padding-bottom:6px}
+.mu-d{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0;height:60px;padding-top:6px;color:var(--ink)}
+.mu-d.is-blank{pointer-events:none}
+.mu-dn{position:relative;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;font-size:16px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;transition:transform .12s}
+.mu-d:active .mu-dn{transform:scale(.9)}
+.mu-d.has-ev .mu-dn{font-weight:700}
+.mu-d.is-off .mu-dn,.mu-d.is-past .mu-dn{color:var(--mut)}
+.mu-d.is-today .mu-dn{background:var(--soft2);color:var(--ink);font-weight:800}
+.mu-bins{display:flex;justify-content:center;gap:2px;height:13px;margin-top:7px}
+.mu-d.is-past .mu-bins{opacity:.42}
+/* the pen circle around the picked day: the same stroke as in the week strip */
+.mu-ring{position:absolute;left:50%;top:21px;display:none;width:min(42px,100%);aspect-ratio:1;transform:translate(-50%,-50%);overflow:visible;fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.mu-ring path{stroke-dasharray:__TL__ __TL__}
+.mu-d.is-sel .mu-ring{display:block}
+.mu-d.is-sel[data-p="0"] .mu-ring path{animation:nestDayA .85s cubic-bezier(.45,.05,.25,1) both}
+.mu-d.is-sel[data-p="1"] .mu-ring path{animation:nestDayB .85s cubic-bezier(.45,.05,.25,1) both}
+/* under the month: the picked day, or which bin is which */
+.mu-foot{min-height:62px;padding:13px 18px 16px;border-top:1px solid var(--hair)}
+.mu-fdate{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:15px;line-height:20px}
+.mu-fdate b{font-weight:800}
+.mu-fdate span{font-size:13px;font-weight:500;color:var(--mut)}
+.mu-foot .mu-chips{margin-top:10px}
+.mu-none{margin-top:6px;font-size:14px;font-weight:500;line-height:18px;color:var(--mut)}
+.mu-foot>.mu-none:first-child{margin-top:0}
+.mu-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0;padding:0;list-style:none;font-size:13px;font-weight:600;line-height:16px;color:var(--mut2)}
+.mu-legend li{display:flex;align-items:center;gap:6px}
+.mu-legend .bin{width:11px;height:13px}
+
+/* the dates after the next one */
+.mu-h{margin:26px 4px 12px;font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:30px}
+.mu-row{gap:14px;min-height:64px;padding:9px 16px}
+.mu-list .mu-row+.mu-row::before{left:74px}
+.mu-tile{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:46px;border-radius:14px;background:var(--seg)}
+.mu-tile b{font-size:18px;font-weight:800;line-height:20px;font-variant-numeric:tabular-nums}
+.mu-tile small{font-size:11px;font-weight:600;line-height:13px;color:var(--mut)}
+.mu-what{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mu-names{font-size:16px;font-weight:600;line-height:20px;overflow-wrap:anywhere}
+.mu-when2{display:flex;align-items:center;gap:8px;min-width:0}
+.mu-when2 .mu-bins{justify-content:flex-start;margin:0}
+.mu-rel{min-width:0;font-size:13px;font-weight:500;line-height:16px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* good to know */
+.mu-info{margin-top:26px}
+.mu-info li b{color:var(--ink);font-weight:700}
+.mu-src{margin-top:12px;font-size:12.5px;line-height:17px}
+.mu-src a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
+
+/* "Eure Tonnen" */
+.mu-sug{margin:0}
+.mu-sug-b{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:0 16px;text-align:left;font-size:16px;font-weight:600}
+.mu-sug-b small{flex:none;font-size:13px;font-weight:500;color:var(--mut)}
+.mu-sug-b:active{background:var(--hair)}
+.mu-sug .row+.row::before{left:16px}
+.mu-sheet .seg .opt{gap:2px}
+.mu-sheet .opt small{font-size:12px;font-weight:500;opacity:.8}
+.mu-tg{flex:1 1 auto;display:flex;align-items:center;gap:14px;min-height:62px;padding:8px 14px 8px 16px;text-align:left}
+.mu-tg:active{background:var(--hair)}
+.mu-tg .bin.big{width:22px;height:26px}
+.mu-tg .bin.big path{stroke-width:.4}
+.mu-tt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mu-tt b{font-size:16px;font-weight:700;line-height:20px}
+.mu-tt small{font-size:13px;font-weight:500;line-height:16px;color:var(--mut)}
+.mu-ck{flex:none;--c:var(--ink)}
+.mu-have{margin:0}
+.mu-have .row+.row::before{left:52px}
+
+@media (max-width:359px){
+  .mu-when{font-size:36px;line-height:40px}
+  .mu-mhead{padding-left:16px}
+  .mu-nav{width:36px;height:36px}
+  .mu-wk,.mu-grid{padding:0 4px}
+  .mu-row{gap:12px;padding:9px 12px}
+  .mu-list .mu-row+.mu-row::before{left:68px}
+}

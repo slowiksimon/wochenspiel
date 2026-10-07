@@ -5,7 +5,7 @@ import { h, $, ico } from './dom.js';
 import { toast as say } from './toast.js';
 import { nestSvg } from './nest.js';
 import { setBadge } from './nav.js';
-import { lock, unlock } from './inert.js';
+import { openSheet, closeSheet, sheetBar } from './sheet.js';
 
 const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
 const tick = () => { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* not supported */ } };
@@ -240,33 +240,7 @@ export function start(db, { uid } = {}) {
     keepFocus(() => wishItems.replaceChildren(...nodes));
   }
 
-  /* ---------- sheets: the wish editor and "paste a list". The phone's back button closes the sheet first. ---------- */
-  let sheetEl = null, pushed = false, opener = null;
-  const setInert = on => (on ? lock : unlock)('sheet');
-  function openSheet(el, from) {
-    if (sheetEl) sheetEl.remove();
-    else {
-      opener = from || document.activeElement;
-      try { history.pushState({ wsSheet: 1 }, '', location.href); pushed = true; } catch (e) { pushed = false; }
-    }
-    sheetEl = el;
-    setInert(true);
-    document.documentElement.classList.add('sheet-open');
-    document.body.append(el);
-  }
-  function closeSheet(quiet, fromPop) {
-    if (!sheetEl) return;
-    sheetEl.remove(); sheetEl = null;
-    setInert(false);
-    document.documentElement.classList.remove('sheet-open');
-    const wasPushed = pushed; pushed = false;
-    if (wasPushed && !fromPop) { try { history.back(); } catch (e) { /* ignore */ } }
-    const o = opener; opener = null;
-    if (!quiet && o && o.isConnected) { try { o.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
-  }
-  window.addEventListener('popstate', () => { if (sheetEl) { pushed = false; closeSheet(false, true); } });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheetEl) closeSheet(); });
-  const sheetBar = (cancel, title, save) => h('div', { class: 'modal-bar straw' }, cancel, h('h3', { text: title }), save || h('span'));
+  /* ---------- sheets: the wish editor and "paste a list" (see sheet.js) ---------- */
 
   function wishSheet(w) {
     const editing = !!w;
@@ -338,15 +312,18 @@ export function start(db, { uid } = {}) {
   }
 
   /* ---------- live data ---------- */
-  db.doc('settings/people').onSnapshot(snap => {
-    const d = snap.exists ? (snap.data() || {}) : {};
+  // One listener on the settings collection brings the items and the names (settings/people is one of its documents).
+  // (Every listener costs the test server one connection of the six a browser opens to one host; the real SDK shares one.)
+  const peopleOf = doc => {
+    let d = null; try { d = doc ? doc.data() : null; } catch (e) { d = null; }
+    d = d && typeof d === 'object' ? d : {};
     const s = v => (typeof v === 'string' ? v.trim().slice(0, 14) : '');
-    S.people = { a: s(d.a), b: s(d.b), aId: typeof d.aId === 'string' ? d.aId : null, bId: typeof d.bId === 'string' ? d.bId : null };
-    paint();
-  }, () => { /* the game shows its own message */ });
+    return { a: s(d.a), b: s(d.b), aId: typeof d.aId === 'string' ? d.aId : null, bId: typeof d.bId === 'string' ? d.bId : null };
+  };
   db.collection('settings').onSnapshot(snap => {
     const r = L.parseItems(snap.docs);
     S.shop = r.shop; S.wish = r.wish; S.loaded = true; S.failed = false;
+    S.people = peopleOf(snap.docs.find(d => d.id === 'people'));
     paint();
   }, () => { S.failed = true; S.loaded = true; paint(); });
   window.addEventListener('ws:unsent', ev => { S.stuck = !!(ev.detail && ev.detail.stuck); paintStatus(); });

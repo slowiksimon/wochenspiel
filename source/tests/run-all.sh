@@ -9,6 +9,7 @@ node build.mjs > "$LOG/build.log" 2>&1 && FAKE=1 node build.mjs >> "$LOG/build.l
 run unit node tests/unit.mjs
 run subpath node tests/run-subpath.mjs
 run lists node tests/run-lists.mjs
+run muell node tests/run-muell.mjs
 run regress node tests/run-regress.mjs
 run real env DIST=dist node tests/run-real.mjs
 run e2e node tests/run-e2e.mjs

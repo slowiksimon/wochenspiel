@@ -1,4 +1,4 @@
-// Unit tests for the pure helpers (src/codec.js, src/seed.js). Run: node tests/unit.mjs
+// Unit tests for the pure helpers (src/codec.js, src/seed.js, src/lists-core.js, src/muell-core.js). Run: node tests/unit.mjs
 import * as C from '../src/codec.js';
 import { starterTasks } from '../src/seed.js';
 import { reporter } from './lib.mjs';
@@ -162,5 +162,64 @@ check('pasted list: windows line breaks, semicolons, long lines, nothing', L.par
 check('pasted list: limited to 100 items', (() => { const r = L.parseList(Array.from({ length: 130 }, (_, i) => 'Ding ' + i).join('\n')); return r.items.length === 100 && r.cut === 30; })());
 check('ids: prefixed and unique', L.newId('shop-').startsWith('shop-') && L.newId('wish-').startsWith('wish-') && new Set(Array.from({ length: 50 }, () => L.newId('shop-'))).size === 50);
 check('norm: case and spaces', L.norm('  Milch  ') === 'milch' && L.norm('MILCH') === L.norm('milch') && L.norm('Äpfel') === 'äpfel');
+
+/* ---- waste plan (pure part): the data taken from the PDF, and the plan of one household ---- */
+process.env.TZ = 'Europe/Vienna';                 // the dates are local dates; Vienna also has the October change of time
+const Mu = await import('../src/muell-core.js');
+const P = Mu.PLAN;
+const at = (md, h = 9, mi = 0) => new Date(2026, Number(md.slice(0, 2)) - 1, Number(md.slice(3)), h, mi);
+const wdOf = md => Mu.wd(at(md));
+const lists = ['rm1', 'rm2', 'at1', 'at2', 'bio', 'gt', 'gs', 'ap', 'ap3', 'c4', 'c2'];
+check('plan: every list is sorted, without repeats, and only real days of 2026', lists.every(k => P[k].every((md, i) => /^\d\d-\d\d$/.test(md) && Mu.keyOf(at(md)) === '2026-' + md && (i === 0 || P[k][i - 1] < md))));
+check('plan: as many dates as the PDF has', lists.map(k => P[k].length).join() === '13,13,6,6,40,26,9,6,17,13,26', lists.map(k => P[k].length).join());
+const onlyOn = (k, day, except) => P[k].every(md => wdOf(md) === day || (except || []).includes(md));
+check('plan: Restmüll area 1 on Mondays (Whit Monday moves it to Thursday 28 May)', onlyOn('rm1', 0, ['05-28']) && wdOf('05-28') === 3);
+check('plan: Restmüll area 2, yellow sack: Thursdays', onlyOn('rm2', 3) && onlyOn('gs', 3));
+check('plan: Bio on Mondays, after the holidays on Wednesday 27 May and Tuesday 27 October', onlyOn('bio', 0, ['05-27', '10-27']) && wdOf('05-27') === 2 && wdOf('10-27') === 1);
+check('plan: yellow bin on Mondays (Easter Monday moves it to Tuesday)', onlyOn('gt', 0, ['04-07']));
+check('plan: paper on Thursdays (Corpus Christi moves it to Friday 5 June)', onlyOn('ap', 3, ['06-05']) && wdOf('06-05') === 4);
+check('plan: containers on Wednesdays, 3-weekly paper on Mondays (three Tuesdays as printed)', onlyOn('c4', 2) && onlyOn('c2', 2) && onlyOn('ap3', 0, ['04-07', '06-09', '09-01']));
+check('plan: the ash bin only comes with the Restmüll of its area', P.at1.every(md => P.rm1.includes(md)) && P.at2.every(md => P.rm2.includes(md)));
+const gapsOf = k => P[k].slice(1).map((md, i) => Mu.daysBetween(at(P[k][i]), at(md)));
+check('plan: the rhythms (4 weeks, 2 weeks, 6 weeks, 9 weeks)', gapsOf('rm2').every(g => g === 28) && gapsOf('rm1').join() === '28,28,28,28,31,25,28,28,28,28,28,28' && gapsOf('gs').every(g => g === 42) && gapsOf('gt').every(g => g === 14 || g === 13 || g === 15) && gapsOf('ap').join() === '63,64,62,63,63' && gapsOf('c4').every(g => g === 28) && gapsOf('c2').every(g => g === 14));
+check('plan: nothing on a Sunday or a public holiday', lists.every(k => P[k].every(md => wdOf(md) !== 6 && !P.holidays[md])));
+check('plan: 16 public holidays, written out', Object.keys(P.holidays).length === 16 && P.holidays['10-26'] === 'Nationalfeiertag' && P.holidays['01-06'] === 'Heilige Drei Könige' && P.holidays['12-08'] === 'Mariä Empfängnis');
+check('plan: 52 + 9 streets, none twice', P.streets1.length === 52 && P.streets2.length === 9 && new Set(P.streets1.concat(P.streets2)).size === 61);
+
+check('streets: typed the way people type', Mu.findStreets('haydn')[0].name === 'Haydngasse' && Mu.findStreets('haydn')[0].area === 2 && Mu.findStreets('tuerken')[0].name === 'Türkengasse' && Mu.findStreets('TÜRK')[0].name === 'Türkengasse' && Mu.findStreets('einoed').map(s => s.name).join() === 'Einöde,Einödstraße');
+check('streets: house numbers and "Str." do not matter', Mu.findStreets('Hauptstr. 12a')[0].name === 'Hauptstraße' && Mu.findStreets('wiener strasse 3')[0].name === 'Wiener Straße' && Mu.findStreets('haupt').map(s => s.name).join() === 'Hauptplatz,Hauptstraße');
+check('streets: a match at the start of a word comes first', Mu.findStreets('dolp')[0].name === 'Dr. Josef Dolp-Straße' && Mu.findStreets('gasse', 3).length === 3 && Mu.findStreets('steinfeld').map(s => s.name).join() === 'Steinfeldgasse,Am Steinfeld');
+check('streets: too short or unknown finds nothing', Mu.findStreets('x').length === 0 && Mu.findStreets('').length === 0 && Mu.findStreets(null).length === 0 && Mu.findStreets('Mondgasse').length === 0 && Mu.findStreets('12').length === 0);
+check('streets: the area of a street', Mu.streetArea('Wiener Straße') === 1 && Mu.streetArea('wiener strasse') === 1 && Mu.streetArea('Einöde') === 2 && Mu.streetArea('Einöd') === 0 && Mu.streetArea('') === 0 && Mu.streetArea(null) === 0);
+
+const D = Mu.cleanSettings(null);
+check('settings: nothing stored means both areas and the usual bins', D.area === 0 && D.street === '' && D.have.rest && D.have.bio && D.have.gt && D.have.gs && D.have.ap && !D.have.asche && !D.have.ap3 && !D.have.c4 && !D.have.c2);
+check('settings: a street of the plan sets its area and is written as in the plan', (() => { const s = Mu.cleanSettings({ street: 'haydngasse' }); return s.area === 2 && s.street === 'Haydngasse'; })());
+check('settings: a street that does not fit the chosen area is dropped, the area stays', (() => { const s = Mu.cleanSettings({ area: 1, street: 'Haydngasse' }); return s.area === 1 && s.street === ''; })());
+check('settings: junk from the shared document is ignored', (() => { const s = Mu.cleanSettings({ area: '1', street: 5, have: { rest: 'yes', bio: false, evil: true } }); return s.area === 0 && s.street === '' && s.have.rest === true && s.have.bio === false && !('evil' in s.have); })() && Mu.cleanSettings('x').area === 0 && Mu.cleanSettings({ have: null }).have.rest === true);
+check('settings: the document written, and comparing two choices', (() => { const s = Mu.cleanSettings({ area: 2, street: 'Haydngasse' }); const d = Mu.settingsDoc(s); return d.v === 1 && d.area === 2 && d.street === 'Haydngasse' && d.have.rest === true && typeof d.at === 'number' && Mu.sameSettings(Mu.cleanSettings(d), s) && !Mu.sameSettings(s, D); })());
+
+const day = (map, key) => (map.get(key) || []).map(Mu.label).join(',');
+const S0 = Mu.schedule(null), S1 = Mu.schedule({ area: 1 }), S2 = Mu.schedule({ area: 2, have: { asche: true } });
+check('schedule without an area: both Restmüll areas, each with its number', day(S0, '2026-10-12') === 'Restmüll Bereich 1,Biotonne' && day(S0, '2026-10-15') === 'Restmüll Bereich 2' && day(S0, '2026-10-08') === 'Altpapier', day(S0, '2026-10-12'));
+check('schedule: on 28 May both areas share one day: one plain "Restmüll"', day(S0, '2026-05-28') === 'Restmüll,Gelber Sack' && day(S1, '2026-05-28') === 'Restmüll,Gelber Sack' && day(S2, '2026-05-28') === 'Restmüll,Gelber Sack', day(S0, '2026-05-28'));
+check('schedule for area 1: its Restmüll only', day(S1, '2026-10-12') === 'Restmüll,Biotonne' && day(S1, '2026-10-15') === '' && day(S1, '2026-01-05') === 'Restmüll,Biotonne');
+check('schedule for area 2 with an ash bin: in the heating months together with the Restmüll', day(S2, '2026-11-12') === 'Restmüll,Aschentonne,Gelber Sack' && day(S2, '2026-10-15') === 'Restmüll' && day(S2, '2026-11-09') === 'Biotonne', day(S2, '2026-11-12'));
+check('schedule: bins switched off are left out', day(Mu.schedule({ area: 1, have: { gt: false, bio: false } }), '2026-10-19') === '' && day(Mu.schedule({ area: 1, have: { gt: false } }), '2026-10-19') === 'Biotonne');
+check('schedule: housing estate collections, two container rhythms on one day show once', day(Mu.schedule({ area: 1, have: { ap3: true } }), '2026-10-12') === 'Restmüll,Biotonne,Altpapier' && day(Mu.schedule({ have: { c4: true, c2: true } }), '2026-01-14') === 'Container' && day(Mu.schedule({ have: { c2: true } }), '2026-01-28') === 'Container');
+check('schedule: nothing chosen, nothing shown', Mu.schedule({ have: Object.fromEntries(Mu.KINDS.map(k => [k.id, false])) }).size === 0);
+
+const first = (map, now) => { const u = Mu.upcoming(map, now, 1)[0]; return u ? u.key + ' ' + u.events.map(Mu.label).join(',') : 'none'; };
+check('next pickup: Wednesday evening, paper tomorrow', first(S1, at('10-07', 18, 30)) === '2026-10-08 Altpapier');
+check('next pickup: on the day itself until noon, then the one after', first(S1, at('10-08', 9)) === '2026-10-08 Altpapier' && first(S1, at('10-08', 11, 59)) === '2026-10-08 Altpapier' && first(S1, at('10-08', 12)) === '2026-10-12 Restmüll,Biotonne');
+check('next pickups: as many as asked, in order', (() => { const u = Mu.upcoming(S1, at('10-07', 18, 30), 4); return u.map(x => x.key.slice(5)).join() === '10-08,10-12,10-19,10-27'; })());
+check('next pickup: none after the end of the plan, the first of the plan before it', first(S1, at('12-29')) === 'none' && first(S1, new Date(2027, 0, 4, 8)) === 'none' && first(S1, new Date(2025, 11, 30, 8)) === '2026-01-05 Restmüll,Biotonne');
+check('when: Heute, Morgen, a weekday in the coming week, else the date', Mu.whenText(at('10-07'), at('10-07', 8)) === 'Heute' && Mu.whenText(at('10-08'), at('10-07', 18, 30)) === 'Morgen' && Mu.whenText(at('10-12'), at('10-07', 18, 30)) === 'Montag' && Mu.whenText(at('10-19'), at('10-07', 18, 30)) === '19. Oktober');
+check('in how many days, also across the change of time on 25 October', Mu.inDays(at('10-08'), at('10-07', 23, 59)) === 'morgen' && Mu.inDays(at('10-12'), at('10-07', 18)) === 'in 5 Tagen' && Mu.inDays(at('10-26', 0, 0), at('10-24', 23, 30)) === 'in 2 Tagen' && Mu.inDays(at('11-02'), at('10-19')) === 'in 14 Tagen');
+check('long date', Mu.longDate(at('10-08')) === 'Donnerstag, 8. Oktober' && Mu.longDate(at('03-01')) === 'Sonntag, 1. März');
+check('holidays by day key, only for the year of the plan', Mu.holiday('2026-10-26') === 'Nationalfeiertag' && Mu.holiday('2026-10-27') === '' && Mu.holiday('2027-10-26') === '');
+const mc = (y, m) => { const c = Mu.monthCells(y, m); return c.findIndex(Boolean) + '/' + c.filter(Boolean).length + '/' + c.length; };
+check('month view: Monday first, blanks before the 1st and after the last day', mc(2026, 9) === '3/31/35' && mc(2026, 1) === '6/28/35' && mc(2026, 5) === '0/30/35' && mc(2026, 7) === '5/31/42', [mc(2026, 9), mc(2026, 1), mc(2026, 5), mc(2026, 7)].join(' '));
+check('month range: the months of the plan, and the current month when it lies after it', (() => { const a = Mu.monthRange(at('10-07')), b = Mu.monthRange(new Date(2027, 1, 3)); return a.lo === 2026 * 12 && a.hi === 2026 * 12 + 11 && b.lo === 2026 * 12 && b.hi === 2027 * 12 + 1; })());
 
 process.exitCode = done() ? 1 : 0;

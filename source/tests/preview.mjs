@@ -1,6 +1,6 @@
 // Screenshots of the real app for the visual check (fake Firebase, frozen clock: Wednesday 7 Oct 2026, week 41).
 //   node tests/preview.mjs [scenario ...]          env: WIDTH=390 HEIGHT=844 DARK=1 TAG=x
-// scenarios: week scrolled drag dragzone shop wish editor settings who wishsheet import empty
+// scenarios: week scrolled drag dragzone shop wish editor settings who wishsheet import empty muell muellsheet
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch, phone, sleep, tapSel, setValue, net, NOW, W, UA_IPHONE } from './e2e-lib.mjs';
@@ -108,6 +108,31 @@ if (want('empty')) {
   await shot(P, 'empty'); report(P, 'empty');
   await tapSel(P.page, '#open-shop'); await sleep(500); await shot(P, 'empty-shop');
   await tapSel(P.page, '#open-wish'); await sleep(500); await shot(P, 'empty-wish');
+  await P.close();
+}
+if (want('muell') || want('muellsheet')) {
+  const P = await open(false);
+  const p = P.page;
+  if (process.env.MUELL) server.put(PROJECT, 'rooms/' + ROOM + '/settings/muell', JSON.parse(process.env.MUELL));
+  await sleep(400);
+  await tapSel(p, '#open-muell'); await sleep(700);
+  if (want('muell')) {
+    await shot(P, 'muell');
+    await p.evaluate(() => window.scrollTo(0, document.querySelector('#mu-cal').getBoundingClientRect().top + window.scrollY - 60)); await sleep(300);
+    await tapSel(p, '#mu-grid [data-key="' + (process.env.PICK || '2026-10-12') + '"]'); await sleep(1000);
+    await shot(P, 'muell2');
+    await p.evaluate(() => window.scrollTo(0, 99999)); await sleep(300);
+    await shot(P, 'muell3');
+  }
+  if (want('muellsheet')) {
+    await p.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+    await tapSel(p, '#mu-set'); await sleep(500);
+    await setValue(p, '#mu-street', process.env.STREET || 'haupt'); await sleep(300);
+    await shot(P, 'muellsheet');
+    await p.evaluate(() => document.querySelector('#mu-sheet .modal-body').scrollTo(0, 9999)); await sleep(300);
+    await shot(P, 'muellsheet2');
+  }
+  report(P, 'muell');
   await P.close();
 }
 await browser.close(); await server.close();
