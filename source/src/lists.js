@@ -6,6 +6,7 @@ import { toast as say } from './toast.js';
 import { nestSvg } from './nest.js';
 import { setBadge } from './nav.js';
 import { openSheet, closeSheet, sheetBar } from './sheet.js';
+import { watchSettings } from './hub.js';
 
 const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
 const tick = () => { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* not supported */ } };
@@ -312,15 +313,14 @@ export function start(db, { uid } = {}) {
   }
 
   /* ---------- live data ---------- */
-  // One listener on the settings collection brings the items and the names (settings/people is one of its documents).
-  // (Every listener costs the test server one connection of the six a browser opens to one host; the real SDK shares one.)
+  // The shared listener on the settings collection (hub.js) brings the items and the names (settings/people is one of its documents).
   const peopleOf = doc => {
     let d = null; try { d = doc ? doc.data() : null; } catch (e) { d = null; }
     d = d && typeof d === 'object' ? d : {};
     const s = v => (typeof v === 'string' ? v.trim().slice(0, 14) : '');
     return { a: s(d.a), b: s(d.b), aId: typeof d.aId === 'string' ? d.aId : null, bId: typeof d.bId === 'string' ? d.bId : null };
   };
-  db.collection('settings').onSnapshot(snap => {
+  watchSettings(db, snap => {
     const r = L.parseItems(snap.docs);
     S.shop = r.shop; S.wish = r.wish; S.loaded = true; S.failed = false;
     S.people = peopleOf(snap.docs.find(d => d.id === 'people'));

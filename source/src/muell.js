@@ -7,6 +7,7 @@ import { h, $, ico } from './dom.js';
 import { toast } from './toast.js';
 import { nestSvg, DAY } from './nest.js';
 import { openSheet, closeSheet, sheetBar } from './sheet.js';
+import { watchSettings, docData } from './hub.js';
 
 
 const CACHE = 'wp2.muell';                     // the last known choice, so the screen is right before the database answers
@@ -353,9 +354,8 @@ function apply(s) {
 export function start(db) {
   if (S.db || !db) return;
   S.db = db;
-  db.doc('settings/muell').onSnapshot(snap => {
-    const d = snap.exists ? snap.data() : null;
-    const s = M.cleanSettings(d);
+  watchSettings(db, snap => {
+    const s = M.cleanSettings(docData(snap, 'muell'));
     if (!M.sameSettings(s, S.set)) apply(s); else cache(s);
   }, () => { /* the plan still shows, with the choice this phone knows */ });
 }

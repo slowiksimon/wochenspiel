@@ -35,3 +35,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheetEl) c
 
 // the straw bar on top of a sheet: cancel on the left, the title, the main action on the right
 export const sheetBar = (cancel, title, save) => h('div', { class: 'modal-bar straw' }, cancel, h('h3', { text: title }), save || h('span'));
+
+// a button that needs a second tap within a few seconds (deleting something that is not one tap to redo)
+export function armable(btn, label, armedLabel, action) {
+  let armed = false, timer = 0, armedAt = 0;
+  btn.textContent = label;
+  btn.addEventListener('click', () => {
+    if (!armed) {
+      armed = true; armedAt = Date.now(); btn.classList.add('is-armed'); btn.textContent = armedLabel;
+      clearTimeout(timer); timer = setTimeout(() => { armed = false; btn.classList.remove('is-armed'); btn.textContent = label; }, 3500);
+      return;
+    }
+    if (Date.now() - armedAt < 400) return;                                 // the same double tap
+    clearTimeout(timer); armed = false; action();
+  });
+  return btn;
+}

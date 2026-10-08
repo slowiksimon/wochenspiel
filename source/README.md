@@ -8,11 +8,12 @@ Die App, die im Hauptverzeichnis dieses Repos liegt (`index.html`, `sw.js`, `man
 | --- | --- |
 | `src/app.js` | Wochenansicht: Nest, Wochenleiste, Aufgaben, Verschieben per Gedrückthalten, Dialoge für Aufgabe, Einstellungen und „Wer bist du?“ |
 | `src/lists.js`, `src/lists-core.js` | Einkaufsliste und Wunschliste (Bildschirme, Dialoge, Listen einfügen, Regeln für Titel, Preise, Links) |
+| `src/putz.js`, `src/putz-core.js` | Putzübersicht: alle Räume nach Stockwerk, je Raum die Arbeiten mit Rhythmus, zuletzt erledigt (wann, von wem), fällig und überfällig; Raum-Dialog zum Bearbeiten |
 | `src/muell.js`, `src/muell-core.js`, `src/muell-data.js` | Müllplan Pfaffstätten: Monatsansicht, nächste Abholung, „Eure Tonnen“ (Straße, Tonnen); Termine und Straßen aus dem Abfuhrplan 2026 des GVA Baden |
 | `src/muell-ics.js` | Kalenderdateien zum Abonnieren (Erinnerung um 19 Uhr am Vorabend), eine je Restmüll-Bereich und Tonnen-Kombination; der Build schreibt sie nach `dist/kalender/` |
 | `src/shell.js`, `src/codec.js`, `src/adapter.js` | Einrichtung, Einladungslink und QR-Code, Anbindung an Firestore (mit Offline-Verhalten) |
-| `src/nest.js`, `src/nav.js`, `src/inert.js`, `src/sheet.js` | Nest-Zeichnung und App-Icon, Tab-Leiste, Sperren der Seite hinter Dialogen, Rahmen der Dialoge |
-| `src/style.css`, `src/lists.css`, `src/muell.css`, `src/shell.css` | Gestaltung (Design „Nest“: Stroh, Papier, Walnuss; Blau = Simon/Person 1, Rot = Anna/Person 2) |
+| `src/nest.js`, `src/nav.js`, `src/inert.js`, `src/sheet.js`, `src/hub.js` | Nest-Zeichnung und App-Icon, Tab-Leiste, Sperren der Seite hinter Dialogen, Rahmen der Dialoge, ein gemeinsamer Listener auf `settings` für Listen, Müll und Putzen |
+| `src/style.css`, `src/lists.css`, `src/muell.css`, `src/putz.css`, `src/shell.css` | Gestaltung (Design „Nest“: Stroh, Papier, Walnuss; Blau = Simon/Person 1, Rot = Anna/Person 2) |
 | `src/body.html`, `src/sw.js`, `src/seed.js`, `src/dom.js`, `src/toast.js` | Seitengerüst, Service Worker, Start-Aufgaben, kleine Helfer |
 | `assets/` | Schrift Gabarito (OFL), Icon als SVG und die daraus erzeugten PNGs |
 | `tests/` | Tests mit Chromium und einem Fake-Firebase-Server |
@@ -35,7 +36,7 @@ Die Dateien aus `dist/` (samt Ordner `kalender/`) ins Hauptverzeichnis des Repos
 npm test               # baut beide Varianten und lässt alle Suiten laufen (einige Minuten)
 ```
 
-Braucht Chromium; liegt es nicht unter `/opt/pw-browsers/chromium`, den Pfad in `CHROMIUM` angeben. Die Tests laufen gegen einen Fake-Firebase-Server und eine eingefrorene Uhr (Mittwoch, 7. Okt. 2026, Woche 41). Eine Suite (`run-real.mjs`) prüft zusätzlich das echte Firebase-SDK ohne Netz, `run-muell.mjs` den Müllplan mit zwei Handys. `node tests/preview.mjs` macht Screenshots aller Bildschirme (`WIDTH`, `HEIGHT`, `DARK=1`).
+Braucht Chromium; liegt es nicht unter `/opt/pw-browsers/chromium`, den Pfad in `CHROMIUM` angeben. Die Tests laufen gegen einen Fake-Firebase-Server und eine eingefrorene Uhr (Mittwoch, 7. Okt. 2026, Woche 41). Eine Suite (`run-real.mjs`) prüft zusätzlich das echte Firebase-SDK ohne Netz, `run-muell.mjs` den Müllplan und `run-putz.mjs` die Putzübersicht, jeweils mit zwei Handys. `node tests/preview.mjs` macht Screenshots aller Bildschirme (`WIDTH`, `HEIGHT`, `DARK=1`).
 
 ## Müllplan für ein neues Jahr
 
@@ -55,5 +56,7 @@ Das Skript prüft jede Zeile (Wochentag, Farbe der Zelle, Feiertage) und den Rhy
 - `settings/people`: Namen, Belohnung, Teamziel (50 bis 100 %), Geräte-IDs der beiden
 - `settings/shop-…`, `settings/wish-…`: Einträge der Einkaufs- und der Wunschliste
 - `settings/muell`: `area` (Restmüll-Bereich 1 oder 2, 0 = offen), `street`, `have` (welche Tonnen der Haushalt hat); gilt für beide
+- `settings/putz`: die Räume (`rooms`: `id`, `n` Name, `f` Stockwerk `og`/`eg`/`kg`, `j` Arbeiten mit `k` Art, `n` eigener Name, `e` Rhythmus in Tagen); fehlt das Dokument, gelten die Räume aus `src/putz-core.js`
+- `settings/putz-d-{Raum}-{Arbeit}`: zuletzt erledigt (`at`, `by`) und die fünf Male davor (`h`)
 
 Zugangsdaten zu Firebase stehen nicht im Code. Sie werden in der App eingegeben und liegen nur auf den Handys.

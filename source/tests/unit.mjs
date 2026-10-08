@@ -1,4 +1,5 @@
-// Unit tests for the pure helpers (src/codec.js, src/seed.js, src/lists-core.js, src/muell-core.js). Run: node tests/unit.mjs
+// Unit tests for the pure helpers (src/codec.js, src/seed.js, src/lists-core.js, src/muell-core.js, src/muell-ics.js, src/putz-core.js).
+// Run: node tests/unit.mjs
 import * as C from '../src/codec.js';
 import { starterTasks } from '../src/seed.js';
 import { reporter } from './lib.mjs';
@@ -246,5 +247,52 @@ check('calendar: unique, stable event ids; the same plan gives the same file', (
 check('calendar: area named only where it matters', /Bereich 1/.test(calFiles.get('muell-b1-01')) && !/Bereich/.test(calFiles.get('muell-b1-0c')) && /X-WR-CALNAME:Müllabfuhr: Altpapier 3-wöchig\r\n/.test(calFiles.get('muell-ap3')));
 check('fold: long lines split without cutting a character', (() => { const t = 'X:' + 'ü'.repeat(80); const f = Ics.foldLine(t); return f.split('\r\n').every(l => new TextEncoder().encode(l).length <= 75) && f.replace(/\r\n /g, '') === t && f.split('\r\n').length === 3; })());
 check('text escaping: backslash, semicolon, comma, line break', Ics.escText('a\\b;c,d\ne') === 'a\\\\b\\;c\\,d\\ne');
+
+/* ---- cleaning overview (pure part) ---- */
+const Pz = await import('../src/putz-core.js');
+const D0 = Pz.defaultRooms();
+const namesOf = f => D0.filter(r => r.f === f).map(r => r.n).join(',');
+check('rooms: the house as listed, floor by floor (Büro listed twice: Büro and Büro 2)', namesOf('og') === 'Schlafzimmer,Spielzimmer,Kinderzimmer,Bad,Stiege' && namesOf('eg') === 'Wohnzimmer,Büro,Küche,Büro 2,Klo,Vorraum,Abstellraum' && namesOf('kg') === 'Keller', namesOf('og') + ' | ' + namesOf('eg'));
+const jobsOf = id => D0.find(r => r.id === id).j.map(j => j.k + j.e).join(',');
+check('rooms: sensible jobs and rhythms per kind of room', jobsOf('schlaf') === 'saugen7,wischen14,staub14,betten14,fenster90' && jobsOf('bad') === 'saugen7,wischen7,putzen7,fenster90' && jobsOf('kueche') === 'saugen7,wischen7,putzen7,fenster90' && jobsOf('klo') === 'saugen7,wischen7,putzen7' && jobsOf('stiege') === 'saugen7,wischen14' && jobsOf('keller') === 'saugen30,wischen90' && D0.every(r => r.j.some(j => j.k === 'saugen') && r.j.some(j => j.k === 'wischen')));
+check('rooms: what "Putzen" means depends on the room', Pz.jobHint({ id: 'bad' }, { k: 'putzen' }) === 'WC, Waschbecken, Dusche, Spiegel' && Pz.jobHint({ id: 'kueche' }, { k: 'putzen' }) === 'Herd, Arbeitsfläche, Spüle' && Pz.jobHint({ id: 'r1' }, { k: 'putzen' }) === 'Oberflächen und Armaturen' && Pz.jobHint({ id: 'bad' }, { k: 'saugen' }) === 'Staubsaugen');
+check('rooms: nothing stored means the rooms above; the stored form reads back the same', JSON.stringify(Pz.cleanRooms(null)) === JSON.stringify(D0) && JSON.stringify(Pz.cleanRooms(Pz.roomsDoc(D0))) === JSON.stringify(D0) && JSON.stringify(Pz.cleanRooms({ rooms: 'x' })) === JSON.stringify(D0));
+check('rooms: junk in the shared document is dropped', (() => {
+  const r = Pz.cleanRooms({ rooms: [
+    { id: 'ok1', n: '  Gäste   zimmer ', f: 'xx', j: [{ k: 'saugen', e: 400 }, { k: 'saugen', e: 3 }, { k: 'evil', e: 7 }, { k: 'xabc', n: '', e: 7 }, { k: 'xdef', n: 'Kühlschrank', e: 30 }] },
+    { id: 'ok1', n: 'doppelt', f: 'og', j: [] }, { id: 'Bad Id', n: 'x', f: 'og', j: [] }, { id: 'noname', n: '   ', f: 'og', j: [] }, null, 'x'] });
+  return r.length === 1 && r[0].n === 'Gäste zimmer' && r[0].f === 'eg' && r[0].j.map(j => j.k + ':' + j.e + (j.n ? ':' + j.n : '')).join() === 'saugen:7,xdef:30:Kühlschrank';
+})());
+check('rooms: at most 30 rooms and 10 jobs each', Pz.cleanRooms({ rooms: Array.from({ length: 40 }, (_, i) => ({ id: 'r' + i, n: 'R' + i, f: 'og', j: Pz.JOB_KEYS.map(k => ({ k, e: 7 })).concat(Array.from({ length: 8 }, (_, k) => ({ k: 'x' + k, n: 'E' + k, e: 7 }))) })) }).every(r => r.j.length === 10) && Pz.cleanRooms({ rooms: Array.from({ length: 40 }, (_, i) => ({ id: 'r' + i, n: 'R' + i, f: 'og', j: [] })) }).length === 30);
+const NOWp = new Date(2026, 9, 7, 18, 30).getTime();
+check('done records: checked on the way in', Pz.cleanDone(null) === null && Pz.cleanDone({ at: 'x' }) === null && Pz.cleanDone({ at: NOWp + 3 * 864e5 }, NOWp) === null && (() => { const d = Pz.cleanDone({ at: NOWp - 864e5, by: 'z', h: [{ at: 1, by: 'a' }, { at: 'x' }, 7, { at: 2, by: 'b' }, { at: 3 }, { at: 4 }, { at: 5 }, { at: 6 }] }, NOWp); return d.by === null && d.h.length === 5 && d.h[0].by === 'a' && d.h[1].at === 2; })());
+check('done records: a new one keeps the last ones, "Rückgängig" brings the previous back', (() => {
+  const a = Pz.doneRecord(null, 100, 'a'), b = Pz.doneRecord(a, 200, 'b'), c = Pz.doneRecord(b, 300, 'x');
+  return a.h.length === 0 && b.h[0].at === 100 && c.h.map(x => x.at).join() === '200,100' && c.by === null && Pz.undoRecord(c).at === 200 && Pz.undoRecord(c).by === 'b' && Pz.undoRecord(c).h[0].at === 100 && Pz.undoRecord(a) === null;
+})());
+check('documents: only putz and putz-d-… are read, the rest of the settings is ignored', (() => {
+  const doc = (id, d) => ({ id, data: () => d });
+  const r = Pz.parseDocs([doc('people', { a: 'S' }), doc('shop-1', { t: 'x' }), doc('putz', { rooms: [{ id: 'k', n: 'Küche', f: 'eg', j: [{ k: 'saugen', e: 7 }] }] }), doc('putz-d-k-saugen', { at: NOWp - 864e5, by: 'a' }), doc('putz-d-k-wischen', { at: 'kaputt' })], NOWp);
+  return r.stored && r.rooms.length === 1 && r.done.size === 1 && r.done.get('k-saugen').by === 'a' && !Pz.parseDocs([], NOWp).stored && Pz.parseDocs([], NOWp).rooms.length === 13;
+})());
+const dayAgo = n => ({ at: new Date(2026, 9, 7 - n, 9).getTime(), by: 'a', h: [] });
+const nowP = new Date(NOWp);
+const stOf = (e, n) => Pz.status({ e }, n == null ? null : dayAgo(n), nowP);
+check('state: weekly job — fresh, soon, due today, overdue', (() => { const s0 = stOf(7, 0), s6 = stOf(7, 6), s7 = stOf(7, 7), s9 = stOf(7, 9); return s0.state === 'ok' && s0.fill === 1 && !s0.due && s6.state === 'bald' && s6.left === 1 && s7.state === 'heute' && s7.due && s9.state === 'ueber' && s9.left === -2 && s9.fill === 0; })());
+check('state: "soon" grows with the rhythm (1, 3 or 7 days before)', stOf(30, 26).state === 'ok' && stOf(30, 27).state === 'bald' && stOf(90, 82).state === 'ok' && stOf(90, 83).state === 'bald' && stOf(14, 10).state === 'ok' && stOf(14, 11).state === 'bald');
+check('state: never done is not overdue', (() => { const s = stOf(7, null); return s.state === 'nie' && !s.due && s.fill === 0; })());
+check('state: across the change of time (25 October)', Pz.daysBetween(new Date(2026, 9, 24, 23, 30), new Date(2026, 9, 26, 0, 10)) === 2 && Pz.status({ e: 7 }, { at: new Date(2026, 9, 21, 20).getTime() }, new Date(2026, 9, 28, 8)).state === 'heute');
+check('texts: since', Pz.sinceText(null) === 'noch nie' && Pz.sinceText(0) === 'heute' && Pz.sinceText(1) === 'gestern' && Pz.sinceText(5) === 'vor 5 Tagen' && Pz.sinceText(5, true) === 'vor 5 T.' && Pz.sinceText(20) === 'vor 2 Wochen' && Pz.sinceText(20, true) === 'vor 2 Wo.' && Pz.sinceText(30) === 'vor 4 Wochen' && Pz.sinceText(75) === 'vor 3 Monaten' && Pz.sinceText(40, true) === 'vor 5 Wo.' && Pz.sinceText(65) === 'vor 2 Monaten' && Pz.sinceText(300, true) === 'vor 10 Mon.');
+check('texts: due', Pz.dueText(stOf(7, 9)) === 'seit 2 Tagen fällig' && Pz.dueText(stOf(7, 8)) === 'seit 1 Tag fällig' && Pz.dueText(stOf(7, 7)) === 'heute fällig' && Pz.dueText(stOf(7, 6)) === 'morgen fällig' && Pz.dueText(stOf(7, 2)) === 'in 5 Tagen fällig' && Pz.dueText(stOf(7, null)) === 'noch nie erledigt');
+check('texts: rhythms', Pz.EVERY.map(Pz.everyText).join('|') === 'alle 3 Tage|jede Woche|alle 2 Wochen|alle 3 Wochen|jeden Monat|alle 2 Monate|alle 3 Monate|alle 6 Monate' && Pz.everyText(10) === 'alle 10 Tage');
+check('overview: the most urgent first, what comes next, the counts', (() => {
+  const rooms = [{ id: 'a', n: 'A', f: 'eg', j: [{ k: 'saugen', e: 7 }, { k: 'wischen', e: 14 }] }, { id: 'b', n: 'B', f: 'og', j: [{ k: 'saugen', e: 30 }, { k: 'fenster', e: 90 }] }];
+  const done = new Map([['a-saugen', dayAgo(9)], ['a-wischen', dayAgo(28)], ['b-saugen', dayAgo(25)]]);
+  const ov = Pz.overview(rooms, done, nowP);
+  return ov.due.map(x => x.room.id + '-' + x.job.k).join() === 'a-wischen,a-saugen' && ov.next.room.id === 'b' && ov.recorded === 3 && ov.total === 4 && ov.byRoom[0].due === 2 && ov.byRoom[1].due === 0;
+})());
+check('overview: nothing recorded, nothing due and nothing next', (() => { const ov = Pz.overview(D0, new Map(), nowP); return ov.due.length === 0 && ov.next === null && ov.recorded === 0 && ov.total === 45; })());
+check('ids: new rooms and own jobs pass the checks of the shared data', Array.from({ length: 30 }, () => Pz.newRoomId()).every(id => /^[a-z0-9]{1,20}$/.test(id)) && Array.from({ length: 30 }, () => Pz.newJobKey()).every(k => /^x[a-z0-9]{1,12}$/.test(k)) && Pz.doneId('kueche', 'saugen') === 'putz-d-kueche-saugen');
+check('a chosen day counts at noon', new Date(Pz.atNoon(new Date(2026, 9, 6, 23, 59))).getHours() === 12 && new Date(Pz.atNoon(new Date(2026, 9, 6, 0, 1))).getDate() === 6 && Pz.shortDate(new Date(2026, 9, 5)) === 'Mo, 5. Okt.');
 
 process.exitCode = done() ? 1 : 0;

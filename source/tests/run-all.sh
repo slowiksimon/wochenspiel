@@ -10,6 +10,7 @@ run unit node tests/unit.mjs
 run subpath node tests/run-subpath.mjs
 run lists node tests/run-lists.mjs
 run muell node tests/run-muell.mjs
+run putz node tests/run-putz.mjs
 run regress node tests/run-regress.mjs
 run real env DIST=dist node tests/run-real.mjs
 run e2e node tests/run-e2e.mjs

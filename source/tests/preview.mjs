@@ -1,6 +1,6 @@
 // Screenshots of the real app for the visual check (fake Firebase, frozen clock: Wednesday 7 Oct 2026, week 41).
 //   node tests/preview.mjs [scenario ...]          env: WIDTH=390 HEIGHT=844 DARK=1 TAG=x
-// scenarios: week scrolled drag dragzone shop wish editor settings who wishsheet import empty muell muellsheet
+// scenarios: week scrolled drag dragzone shop wish editor settings who wishsheet import empty muell muellsheet putz putzsheet putzempty
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch, phone, sleep, tapSel, setValue, net, NOW, W, UA_IPHONE } from './e2e-lib.mjs';
@@ -135,6 +135,36 @@ if (want('muell') || want('muellsheet')) {
     await shot(P, 'muellsheet2');
   }
   report(P, 'muell');
+  await P.close();
+}
+if (want('putz') || want('putzsheet') || want('putzempty')) {
+  const P = await open(false);
+  const p = P.page;
+  const day = 864e5;
+  const done = (id, ago, by) => server.put(PROJECT, 'rooms/' + ROOM + '/settings/putz-d-' + id, { at: NOW - ago * day, by, h: [] });
+  if (!want('putzempty')) {
+    done('kueche-wischen', 10, 'b'); done('kueche-saugen', 2, 'a'); done('kueche-putzen', 6, 'b');
+    done('bad-putzen', 7, 'a'); done('bad-saugen', 1, 'b'); done('bad-wischen', 5, 'b');
+    done('wohn-saugen', 0, 'a'); done('wohn-wischen', 20, 'a'); done('wohn-staub', 9, 'b');
+    done('schlaf-saugen', 4, 'a'); done('schlaf-betten', 12, 'b'); done('schlaf-fenster', 40, 'a');
+    done('kinder-saugen', 3, 'b'); done('stiege-saugen', 8, 'a'); done('vorraum-wischen', 2, 'a'); done('keller-saugen', 25, 'b');
+  }
+  await sleep(500);
+  await tapSel(p, '#open-putz'); await sleep(700);
+  if (want('putz') || want('putzempty')) {
+    const tag = want('putzempty') ? 'putzempty' : 'putz';
+    await shot(P, tag);
+    await p.evaluate(() => window.scrollTo(0, 560)); await sleep(300); await shot(P, tag + '2');
+    await p.evaluate(() => window.scrollTo(0, 99999)); await sleep(300); await shot(P, tag + '3');
+  }
+  if (want('putzsheet')) {
+    await p.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+    await tapSel(p, '#pz-list [data-room="kueche"] .pz-rhead'); await sleep(500);
+    await shot(P, 'putzsheet');
+    await p.evaluate(() => document.querySelector('#pz-sheet .modal-body').scrollTo(0, 9999)); await sleep(300);
+    await shot(P, 'putzsheet2');
+  }
+  report(P, 'putz');
   await P.close();
 }
 await browser.close(); await server.close();

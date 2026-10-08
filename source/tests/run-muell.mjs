@@ -43,10 +43,10 @@ const junk = page => page.evaluate(() => { const m = document.body.innerText.mat
 /* ======================================================================================================== */
 console.log('1. the tab and the screen');
 const A = await open('uid-simon-0001', 'a'), a = A.page;
-check('five tabs, in this order: Woche, Einkauf, Wünsche, Müll, Ich', (await a.evaluate(() => Array.from(document.querySelectorAll('#tabbar .tab')).map(t => t.querySelector('span').textContent).join())) === 'Woche,Einkauf,Wünsche,Müll,Ich');
+check('six tabs, in this order: Woche, Einkauf, Wünsche, Putzen, Müll, Ich', (await a.evaluate(() => Array.from(document.querySelectorAll('#tabbar .tab')).map(t => t.querySelector('span').textContent).join())) === 'Woche,Einkauf,Wünsche,Putzen,Müll,Ich');
 check('the Müll tab carries a dot: paper goes out tomorrow', await visible(a, '#d-muell') && (await attr(a, '#open-muell', 'aria-label')) === 'Müll, morgen: Altpapier', await attr(a, '#open-muell', 'aria-label'));
 await goMuell(A);
-check('"Müll" shows its screen, hides the week, the egg sits behind the fourth tab', await visible(a, '#screen-muell') && !(await visible(a, '#screen-week')) && (await attr(a, '#open-muell', 'aria-current')) === 'page' && (await a.evaluate(() => document.querySelector('#tabbar').style.getPropertyValue('--i'))) === '3');
+check('"Müll" shows its screen, hides the week, the egg sits behind the fifth tab', await visible(a, '#screen-muell') && !(await visible(a, '#screen-week')) && (await attr(a, '#open-muell', 'aria-current')) === 'page' && (await a.evaluate(() => document.querySelector('#tabbar').style.getPropertyValue('--i'))) === '4');
 check('…and the dot is not shown on the active tab', (await a.evaluate(() => getComputedStyle(document.querySelector('#d-muell')).display)) === 'none');
 const hero = await ftext(a, '#mu-next');
 check('the header says what goes out next: tomorrow, Thursday 8 October, paper', /^Morgen Donnerstag, 8\. Oktober Altpapier Bis 6 Uhr früh rausstellen$/.test(hero), hero);

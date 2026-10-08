@@ -1,10 +1,10 @@
-// The four screens (Woche, Einkauf, Wünsche, Müll) and the tab bar under them. The fifth tab, "Ich", opens the settings sheet;
+// The five screens (Woche, Einkauf, Wünsche, Putzen, Müll) and the tab bar under them. The sixth tab, "Ich", opens the settings sheet;
 // the game wires that one itself.
 import { $ } from './dom.js';
 
-const TABS = { week: 'tab-week', shop: 'open-shop', wish: 'open-wish', muell: 'open-muell' };
-const ORDER = ['week', 'shop', 'wish', 'muell'];
-const scrolls = { week: 0, shop: 0, wish: 0, muell: 0 };
+const TABS = { week: 'tab-week', shop: 'open-shop', wish: 'open-wish', putz: 'open-putz', muell: 'open-muell' };
+const ORDER = ['week', 'shop', 'wish', 'putz', 'muell'];
+const scrolls = { week: 0, shop: 0, wish: 0, putz: 0, muell: 0 };
 let cur = 'week';
 
 const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);

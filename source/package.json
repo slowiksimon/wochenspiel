@@ -1,7 +1,7 @@
 {
   "name": "slowik",
-  "version": "2.2.0",
-  "description": "Slowik: gemeinsame Aufgaben, Einkaufsliste, Wunschliste und Müllplan für zwei Personen (PWA, Firebase)",
+  "version": "2.3.0",
+  "description": "Slowik: gemeinsame Aufgaben, Einkaufsliste, Wunschliste, Putzübersicht und Müllplan für zwei Personen (PWA, Firebase)",
   "private": true,
   "type": "module",
   "scripts": {

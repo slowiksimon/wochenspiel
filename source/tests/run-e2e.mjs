@@ -274,7 +274,7 @@ console.log('4b. tabs, strip, nest, filter, zones');
   check('"Wünsche" shows the wish screen, the egg moved behind it', await visible(a, '#screen-wish') && !(await visible(a, '#screen-shop')) && (await a.evaluate(() => document.querySelector('#tabbar').style.getPropertyValue('--i'))) === '2');
   await tapSel(a, '#tab-week');
   check('"Woche" brings the week back', await visible(a, '#screen-week') && !(await visible(a, '#screen-wish')) && (await attr(a, '#tab-week', 'aria-current')) === 'page');
-  check('the tab bar has five tabs, the last ("Ich") opens the settings', (await a.evaluate(() => document.querySelectorAll('#tabbar .tab').length)) === 5 && /Ich/.test(await text(a, '#open-settings')) && (await a.evaluate(() => document.querySelector('#tabbar .tab:last-child').id)) === 'open-settings');
+  check('the tab bar has six tabs, the last ("Ich") opens the settings', (await a.evaluate(() => document.querySelectorAll('#tabbar .tab').length)) === 6 && /Ich/.test(await text(a, '#open-settings')) && (await a.evaluate(() => document.querySelector('#tabbar .tab:last-child').id)) === 'open-settings');
 
   // the strip
   await showDay(a, 2);
@@ -368,6 +368,7 @@ console.log('4c. the finished nest');
   await waitFor(async () => (await tiles(n)) === 2, 8000);
   await n.evaluate(() => { const x = document.querySelector('[data-act="hint"]'); if (x) x.click(); });
   const lbl = () => text(n, '#quest');
+  await waitFor(async () => /^1\s/.test(await lbl()), 4000);                    // the number appears once this week's ticks are in
   check('the nest says how many coins are missing and for what (the emoji of the reward is left out)', /^1\s/.test(await lbl()) && /Eis essen/.test(await lbl()) && !/🍦/.test(await lbl()), JSON.stringify(await lbl()));
   check('nothing done yet: the nest is empty, the check mark is hidden', (await n.evaluate(() => document.querySelector('#ring .lit').classList.contains('is-empty'))) && !(await visible(n, '#hero-ok')) && (await visible(n, '#hero-num')));
   await tapTile(n, W + '_t-eins_2');
@@ -573,7 +574,7 @@ console.log('8. settings');
   await a.evaluate(() => window.scrollTo(0, 0));
   await tapSel(a, '#open-settings');
   const blockText = await waitFor(() => text(a, '.ws-set'), 3000);
-  check('settings sheet has the connection block', /Verbindung/.test(blockText) && blockText.includes('····' + R.slice(-4).toUpperCase()) && /Online/.test(blockText) && /Version 2\.2 \([0-9a-f]{6}\)/.test(blockText), blockText);
+  check('settings sheet has the connection block', /Verbindung/.test(blockText) && blockText.includes('····' + R.slice(-4).toUpperCase()) && /Online/.test(blockText) && /Version 2\.3 \([0-9a-f]{6}\)/.test(blockText), blockText);
   await shot(a, 'settings.png');
   check('connection block shows no household secrets', !blockText.includes(R) && !/AIza/.test(blockText));
   await tapLabel(a, 'Einladen / QR-Code', '#modal');

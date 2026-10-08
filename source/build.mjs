@@ -31,7 +31,7 @@ const appJs = bundle.outputFiles[0].text;
 
 /* 2. styles and markup. The lengths of the hand-drawn circles are measured from their paths (see nest.js). */
 const fill = t => t.replaceAll('__TL3__', String(DAY.len + 3)).replaceAll('__TL__', String(DAY.len)).replaceAll('__HL3__', String(HOT.len + 3)).replaceAll('__HL__', String(HOT.len));
-const css = (await esbuild.transform(fill(['style.css', 'shell.css', 'lists.css', 'muell.css'].map(f => read(path.join(SRC, f))).join('\n')), { minify: MIN, loader: 'css' })).code;
+const css = (await esbuild.transform(fill(['style.css', 'shell.css', 'lists.css', 'muell.css', 'putz.css'].map(f => read(path.join(SRC, f))).join('\n')), { minify: MIN, loader: 'css' })).code;
 const body = read(path.join(SRC, 'body.html')).replace('__NEST__', nestSvg('', true)).replace('__EGG__', eggD(52, 62));
 
 /* 3. the font, embedded so the app works offline and never calls a font server (Gabarito, variable weight, SIL Open Font License) */

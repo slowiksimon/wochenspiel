@@ -38,6 +38,7 @@ export const SPRITE = '<svg id="nest-sprite" width="0" height="0" style="positio
   + '<symbol id="i-week" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8.5 3v3.5M15.5 3v3.5"/><path d="m9.2 15 2 2 3.6-3.8"/></symbol>'
   + '<symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4.5h2.4l2 9.6a1.6 1.6 0 0 0 1.6 1.3h7.4a1.6 1.6 0 0 0 1.55-1.2L19.8 8H6"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/></symbol>'
   + '<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M11 3.5c.7 4.4 2.9 6.6 7.3 7.3-4.4.7-6.6 2.9-7.3 7.3-.7-4.4-2.9-6.6-7.3-7.3 4.4-.7 6.6-2.9 7.3-7.3z"/><path d="M19 15.5v4M17 17.5h4"/></symbol>'
+  + '<symbol id="i-broom" viewBox="0 0 24 24"><path d="M14.2 3.2 12.4 10.9"/><path d="M8.4 11h7.8"/><path d="M8.4 11 6.3 20.6h11.9L16.2 11"/><path d="m10.7 14.6-.6 5.8M13.8 14.6l.4 5.8"/></symbol>'
   + '<symbol id="i-bin" viewBox="0 0 24 24"><path d="M4.3 7.4h15.4"/><path d="M5.4 7.4c.1-1.7 1.1-2.7 2.8-2.7h7.6c1.7 0 2.7 1 2.8 2.7"/><path d="m6.3 7.4 1.1 10a1.6 1.6 0 0 0 1.6 1.4h6a1.6 1.6 0 0 0 1.6-1.4l1.1-10"/><path d="M10 11v4.3M14 11v4.3"/><circle cx="9" cy="20.7" r="1.1"/><circle cx="15" cy="20.7" r="1.1"/></symbol>'
   + '<symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 3.6a5.4 5.4 0 0 0-5.4 5.4v4.1L5 16.7h14l-1.6-3.6V9A5.4 5.4 0 0 0 12 3.6z"/><path d="M9.9 19.3a2.2 2.2 0 0 0 4.2 0"/></symbol>'
   + '<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.7-3.7 3.4-5.5 7-5.5s6.3 1.8 7 5.5"/></symbol>'

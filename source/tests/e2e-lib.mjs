@@ -99,7 +99,9 @@ export async function tapSel(page, sel) {
 // before they look at, scroll to or tap a tile. A tile key is weekKey_taskId_day, the day is the last part.
 export const dayOfKey = key => Number(String(key).split('_').pop());
 export const showDay = (page, d) => page.evaluate(d => { const c = document.querySelector('#strip .dcell[data-day="' + d + '"]'); if (c && !c.classList.contains('is-sel')) c.click(); }, d);
-export async function tapTile(page, key) { await showDay(page, dayOfKey(key)); await tapSel(page, '.tile[data-key="' + key + '"]'); }
+// the game ignores taps until this week's ticks are in (a tap could overwrite one): a test waits for that, as a person would see it
+export const weekReady = page => waitFor(() => page.evaluate(() => { const d = document.querySelector('#days'); return !!d && !d.classList.contains('is-loading'); }), 6000);
+export async function tapTile(page, key) { await weekReady(page); await showDay(page, dayOfKey(key)); await tapSel(page, '.tile[data-key="' + key + '"]'); }
 export async function scrollToKey(page, key) { await showDay(page, dayOfKey(key)); await page.evaluate(k => { const e = document.querySelector('.tile[data-key="' + k + '"]'); if (e) e.scrollIntoView({ block: 'center' }); }, key); await sleep(260); }
 // every tile of the week: the day strip is walked through once and the selection is put back
 export const allTiles = page => page.evaluate(() => {

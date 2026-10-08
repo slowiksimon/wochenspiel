@@ -7,10 +7,11 @@ import * as A from './adapter.js';
 import { starterTasks } from './seed.js';
 import * as Lists from './lists.js';
 import * as Muell from './muell.js';
+import * as Putz from './putz.js';
 import { iconSvg } from './nest.js';
 import { lock, unlock } from './inert.js';
 
-const VERSION = '2.2';
+const VERSION = '2.3';
 const BUILD = ((document.querySelector('meta[name="ws-build"]') || {}).content || '').slice(0, 6);
 const LS = { conn: 'ws.v1', uid: 'ws.uid', me: 'wp2.me', installSeen: 'ws.install', draft: 'ws.draft' };
 const CONSOLE_URL = 'https://console.firebase.google.com/';
@@ -103,6 +104,7 @@ function startSession(conn) {
   // shopping list and wish list sit next to the game; the game must start even if they ever fail
   try { Lists.start(session.db, { uid: getUid() }); } catch (e) { /* not essential */ }
   try { Muell.start(session.db); } catch (e) { /* not essential */ }
+  try { Putz.start(session.db, { uid: getUid() }); } catch (e) { /* not essential */ }
   return session;
 }
 
