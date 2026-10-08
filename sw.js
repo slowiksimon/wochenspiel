@@ -1,7 +1,7 @@
 // Service worker: keeps the app shell available offline. It never touches requests to other origins (Firebase).
 // Caches are per origin, and a github.io address hosts every repository of the same person, so the cache name carries the
 // scope (the repository's path): another copy of the app or another project never meets this one's cache.
-const VERSION = 'b3930d0f69';
+const VERSION = 'eff1bfb0e4';
 const SCOPE = new URL(self.registration.scope);
 const PREFIX = 'wochenspiel:' + SCOPE.pathname + ':';
 const CACHE = PREFIX + VERSION;
