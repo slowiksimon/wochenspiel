@@ -12,9 +12,9 @@
 // Shared data is untrusted (anyone with the invite link can write it): everything is checked on the way in.
 
 export const FLOORS = [
-  { id: 'og', name: 'Obergeschoss' },
-  { id: 'eg', name: 'Erdgeschoss' },
-  { id: 'kg', name: 'Keller' }
+  { id: 'og', name: 'Obergeschoss', short: 'OG' },
+  { id: 'eg', name: 'Erdgeschoss', short: 'EG' },
+  { id: 'kg', name: 'Keller', short: 'Keller' }
 ];
 export const FLOOR = Object.fromEntries(FLOORS.map(f => [f.id, f]));
 
@@ -178,6 +178,51 @@ export function overview(rooms, done, now) {
   const next = recorded.filter(x => !x.st.due).sort((x, y) => x.st.left - y.st.left || x.job.e - y.job.e)[0] || null;
   return { byRoom, due, next, recorded: recorded.length, total: items.length };
 }
+
+/* ---------- the floor plans: one per floor, every room one field with its state at a glance ---------- */
+// a room (an entry of overview().byRoom) from its jobs: dark as soon as one of them is overdue, dim when one is due today
+// (then the field names what is due: "Wischen"); otherwise it drains with the job that is due next, "sauber" while more
+// than half of that job's rhythm is left, then the days until it is due. Jobs never recorded do not count, unless no job of
+// the room was recorded.
+export function roomState(r) {
+  if (!r.jobs.length) return { state: 'nie', fill: 0, due: [], text: 'keine Arbeiten' };
+  const rec = r.jobs.filter(x => x.rec);
+  if (!rec.length) return { state: 'nie', fill: 0, due: [], text: 'noch nie' };
+  const due = r.jobs.filter(x => x.st.due).map(x => jobName(x.job));
+  if (due.length) return { state: rec.some(x => x.st.state === 'ueber') ? 'ueber' : 'heute', fill: 0, due, text: due.join(', ') };
+  const fill = Math.min(...rec.map(x => x.st.fill)), left = Math.min(...rec.map(x => x.st.left));
+  const state = rec.some(x => x.st.state === 'bald') ? 'bald' : 'ok';
+  return { state, fill, due, text: state === 'ok' && fill >= 0.5 ? 'sauber' : left === 1 ? 'morgen' : 'in ' + left + ' Tagen' };
+}
+// the same for a screen reader
+export function roomSpeech(s) {
+  if (s.due.length) return s.text + ' fällig';
+  if (s.state === 'nie') return s.text === 'noch nie' ? 'noch nie erledigt' : s.text;
+  return s.text === 'sauber' ? 'sauber' : 'wieder fällig ' + s.text;
+}
+// how big a room is drawn: roughly as such rooms are (the living room big, the toilet small); own rooms by their name
+const SIZE = { schlaf: 1.4, spiel: 1.2, kinder: 1.3, bad: 1, stiege: 0.8, wohn: 1.8, buero: 1, kueche: 1.3, buero2: 1, klo: 0.75, vorraum: 1, abstell: 0.9, keller: 1 };
+export const roomSize = r => SIZE[r.id] || Math.max(0.8, Math.min(1.6, r.n.length / 8));
+// rooms in rows of at most `per`, as even as possible (5 rooms in rows of 2: 2, 2 and 1; 6 in rows of 4: 3 and 3)
+export function rowsOf(rooms, per) {
+  const n = rooms.length, out = [];
+  if (!n) return out;
+  const rows = Math.ceil(n / Math.max(1, per)), base = Math.floor(n / rows), extra = n % rows;
+  for (let k = 0, i = 0; k < rows; k++) { const c = base + (k < extra ? 1 : 0); out.push(rooms.slice(i, i + c)); i += c; }
+  return out;
+}
+// a floor as a plan: from three rooms on the biggest one gets a column of its own on the left, as a living room often has,
+// and the others share the rest in even rows of `per` (two of them stacked when there are just two); one or two rooms
+// simply sit side by side
+export function planLayout(rooms, per = 2) {
+  if (rooms.length <= 2) return { big: null, rows: rooms.length ? [rooms.slice()] : [] };
+  let big = rooms[0];
+  for (const r of rooms) if (roomSize(r) > roomSize(big)) big = r;
+  const rest = rooms.filter(r => r !== big);
+  return { big, rows: rowsOf(rest, rest.length <= 2 ? 1 : per) };
+}
+// where a long room name may break in a narrow field ("Schlaf-zimmer"), as soft hyphens: also on phones that cannot hyphenate
+export const softName = n => n.replace(/(\p{L}{3,}?)(zimmer|raum|küche|keller|kammer|stube|garage|diele|flur|bad|büro|klo)(?=\P{L}|$)/giu, '$1­$2');
 
 export const newRoomId = () => 'r' + Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, '') + Date.now().toString(36).slice(-3);
 export const newJobKey = () => 'x' + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, '');

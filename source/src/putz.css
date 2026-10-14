@@ -1,15 +1,61 @@
 /* The cleaning overview ("Putzen"), in the Nest style. A job is a small field of straw that drains as its rhythm runs out:
-   full right after it was done, empty when it is due; an overdue job turns dark. Never recorded: a dashed outline. */
+   full right after it was done, empty when it is due; an overdue job turns dark. Never recorded: a dashed outline.
+   On top the plan of one floor, drawn like a floor plan: the rooms are fields of light that drain the same way. */
+:root{
+  --pz-wall:#2A211B; --pz-full:#FFFDF7; --pz-empty:#ECB94B; --pz-dim:#C99A3A; --pz-over:#3B2F26; --pz-over-fg:#FFFDF7;
+  --pz-mut:rgba(42,33,27,.74)
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --pz-wall:#EDE5D6; --pz-full:#7A5C2C; --pz-empty:#2A2019; --pz-dim:#4A3A2A; --pz-over:#DCD1BF; --pz-over-fg:#2A211B;
+    --pz-mut:rgba(247,243,234,.84)
+  }
+}
 
-/* the hero: the most urgent job */
-.pz-next{padding:16px 20px 0}
-.pz-big{font-size:40px;font-weight:800;letter-spacing:-1.1px;line-height:44px;overflow-wrap:anywhere}
-.pz-what{margin-top:4px;font-size:16px;font-weight:700;line-height:21px}
-.pz-what.soft{font-size:15px;font-weight:500;line-height:20px;color:var(--hero-mut)}
-.pz-last{margin-top:2px;font-size:14px;font-weight:500;line-height:19px;color:var(--hero-mut)}
-.pz-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:16px}
+/* the floors: OG / EG / Keller, with what is due there */
+.pz-floors{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;margin:12px 20px 0;padding:4px;border-radius:24px;background:var(--hero-soft)}
+.pz-fbtn{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;height:40px;padding:0 8px;border-radius:20px;color:var(--hero-ink);font-size:15px;font-weight:700;white-space:nowrap;transition:background-color .2s,color .2s}
+.pz-fbtn:active{transform:scale(.96)}
+.pz-fbtn[aria-checked="true"]{background:var(--btn);color:var(--btn-fg)}
+.pz-fcnt{flex:none;display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--hero-ink);color:var(--paper);font-size:12px;font-weight:800;line-height:1}
+.pz-fbtn[aria-checked="true"] .pz-fcnt{background:var(--btn-fg);color:var(--btn)}
+
+/* the plan of the floor shown: walls in ink, every room a field of light */
+.pz-plan{display:flex;flex-direction:column;gap:2px;margin:12px 20px 0;padding:3px;border-radius:3px;background:var(--pz-wall)}
+.pz-plan.has-big{flex-direction:row}
+.pz-plan .pz-hr.is-big{flex:0 0 38%}
+.pz-plan.is-half .pz-hr.is-big{flex-basis:50%}
+.pz-prest{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pz-prow{flex:1 1 auto;display:flex;gap:2px}
+.pz-plan:not(.has-big) .pz-hr{min-height:76px}
+.pz-hr{position:relative;isolation:isolate;flex:1 1 0;min-width:0;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 6px;border-radius:2px;
+  background:var(--pz-empty);color:var(--hero-ink);text-align:center;overflow:hidden;transition:background-color .45s,color .45s}
+.pz-hr::before{content:"";position:absolute;left:0;right:0;bottom:0;z-index:-1;height:calc(var(--fill,0) * 100%);background:var(--pz-full);transition:height .8s cubic-bezier(.3,.6,.2,1)}
+.pz-hr::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
+.pz-hr:active::after{background:rgba(42,33,27,.1)}
+.pz-hr b{max-width:100%;font-size:14px;font-weight:700;line-height:17px;-webkit-hyphens:manual;hyphens:manual;overflow-wrap:anywhere}
+.pz-hr small{max-width:100%;font-size:12px;font-weight:600;line-height:15px;color:var(--pz-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pz-hr.is-big b{font-size:15px;line-height:18px}
+.pz-hr.is-heute{background:var(--pz-dim)}
+.pz-hr.is-heute small{font-weight:800;color:var(--hero-ink)}
+.pz-hr.is-ueber{background:var(--pz-over);color:var(--pz-over-fg)}
+.pz-hr.is-ueber small{font-weight:800;color:var(--pz-over-fg)}
+.pz-hr.is-ueber:active::after{background:rgba(255,253,247,.12)}
+.pz-hr.is-wait small{visibility:hidden}
+.hero .pz-hr:focus-visible{outline:2.5px solid var(--hero-ink);outline-offset:-5px}
+.hero .pz-hr.is-ueber:focus-visible{outline-color:var(--pz-over-fg)}
+
+/* under the plan: the most urgent job */
+.pz-next{display:flex;align-items:center;gap:12px;min-height:44px;margin:18px 20px 0}
+.pz-nt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.pz-nt b{font-size:17px;font-weight:800;line-height:22px;overflow-wrap:anywhere}
+.pz-nt span{font-size:14px;font-weight:500;line-height:19px;color:var(--hero-mut)}
+.pz-done{flex:none}
 .pz-done .ico{width:19px;height:19px;stroke-width:2.4}
-.pz-more{font-size:14px;font-weight:600;line-height:18px;color:var(--hero-mut)}
+@media (prefers-reduced-motion:reduce){
+  .pz-hr,.pz-hr::before,.pz-fbtn{transition:none}
+  .pz-room.is-flash{animation:none;background:var(--soft)}
+}
 
 /* floors and rooms */
 .pz-list{display:flex;flex-direction:column}
@@ -37,6 +83,9 @@
 .pz-chip.is-ueber small{color:var(--paper);opacity:.8}
 .pz-chip.stamp{animation:pzStamp .8s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pzStamp{0%{transform:scale(.9)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
+/* the room that was tapped in the plan */
+.pz-room.is-flash{animation:pzFlash 1.8s ease-out}
+@keyframes pzFlash{0%,35%{background:var(--soft2)}100%{background:transparent}}
 .pz-addroom{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-top:18px;border-radius:20px;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--mut2);font-size:15px;font-weight:700}
 .pz-addroom .ico{width:18px;height:18px;stroke-width:2.2}
 .pz-addroom:active{background:var(--hair)}
@@ -66,7 +115,9 @@
 .pz-addjob .ico{width:16px;height:16px;stroke-width:2.2}
 
 @media (max-width:359px){
-  .pz-big{font-size:34px;line-height:38px}
+  .pz-hr b,.pz-hr.is-big b{font-size:13px;line-height:16px}
+  .pz-hr small{font-size:11.5px}
+  .pz-fbtn{font-size:14px}
   .pz-chips{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
   .pz-rooms .pz-room{padding-left:14px;padding-right:12px}
 }

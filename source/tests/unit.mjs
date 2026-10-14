@@ -292,6 +292,30 @@ check('overview: the most urgent first, what comes next, the counts', (() => {
   return ov.due.map(x => x.room.id + '-' + x.job.k).join() === 'a-wischen,a-saugen' && ov.next.room.id === 'b' && ov.recorded === 3 && ov.total === 4 && ov.byRoom[0].due === 2 && ov.byRoom[1].due === 0;
 })());
 check('overview: nothing recorded, nothing due and nothing next', (() => { const ov = Pz.overview(D0, new Map(), nowP); return ov.due.length === 0 && ov.next === null && ov.recorded === 0 && ov.total === 45; })());
+check('plan: a room from its jobs — never, overdue, due today, soon, clean, half', (() => {
+  const J3 = [{ k: 'saugen', e: 7 }, { k: 'wischen', e: 14 }, { k: 'fenster', e: 90 }];
+  const room = (jobs, recs) => Pz.roomState(Pz.overview([{ id: 'k', n: 'K', f: 'eg', j: jobs }], new Map(Object.entries(recs).map(([k, n]) => ['k-' + k, dayAgo(n)])), nowP).byRoom[0]);
+  const nie = room(J3, {}), ueber = room(J3, { saugen: 9, wischen: 14 }), heute = room(J3, { saugen: 7 }), bald = room(J3, { saugen: 6, wischen: 1 }), ok = room(J3, { saugen: 1, wischen: 2 }), half = room(J3, { saugen: 4 }), none = room([], {});
+  return nie.state === 'nie' && nie.text === 'noch nie' && nie.fill === 0 && Pz.roomSpeech(nie) === 'noch nie erledigt'
+    && ueber.state === 'ueber' && ueber.text === 'Saugen, Wischen' && ueber.due.length === 2 && ueber.fill === 0 && Pz.roomSpeech(ueber) === 'Saugen, Wischen fällig'
+    && heute.state === 'heute' && heute.text === 'Saugen' && heute.due.length === 1
+    && bald.state === 'bald' && bald.text === 'morgen' && Math.abs(bald.fill - 1 / 7) < 1e-9 && Pz.roomSpeech(bald) === 'wieder fällig morgen'
+    && ok.state === 'ok' && ok.text === 'sauber' && Math.abs(ok.fill - 6 / 7) < 1e-9 && Pz.roomSpeech(ok) === 'sauber'
+    && half.state === 'ok' && half.text === 'in 3 Tagen' && Pz.roomSpeech(half) === 'wieder fällig in 3 Tagen' && none.state === 'nie' && none.text === 'keine Arbeiten';
+})());
+check('plan: the biggest room a column of its own, the others in even rows; one or two rooms side by side', (() => {
+  const rows = (n, per) => Pz.rowsOf(Array.from({ length: n }, (_, i) => i), per).map(r => r.length).join('+');
+  const show = (f, per) => { const L = Pz.planLayout(D0.filter(r => r.f === f), per); return (L.big ? '[' + L.big.id + '] ' : '') + L.rows.map(r => r.map(x => x.id).join(',')).join(' | '); };
+  const three = Pz.planLayout([{ id: 'a', n: 'Gang' }, { id: 'b', n: 'Wohnküche' }, { id: 'c', n: 'WC' }]);
+  return rows(5, 2) === '2+2+1' && rows(6, 4) === '3+3' && rows(7, 3) === '3+2+2' && rows(1, 4) === '1' && rows(0, 4) === ''
+    && show('og') === '[schlaf] spiel,kinder | bad,stiege' && show('eg') === '[wohn] buero,kueche | buero2,klo | vorraum,abstell' && show('eg', 3) === '[wohn] buero,kueche,buero2 | klo,vorraum,abstell' && show('kg') === 'keller'
+    && three.big.id === 'b' && three.rows.map(r => r.map(x => x.id).join()).join('|') === 'a|c'
+    && Pz.planLayout([{ id: 'a', n: 'A' }, { id: 'b', n: 'B' }]).big === null && Pz.planLayout([]).rows.length === 0;
+})());
+check('plan: room sizes and break points in long names', Pz.roomSize({ id: 'wohn', n: 'Wohnzimmer' }) === 1.8 && Pz.roomSize({ id: 'klo', n: 'Klo' }) === 0.75 && Pz.roomSize({ id: 'rx1', n: 'WC' }) === 0.8 && Pz.roomSize({ id: 'rx2', n: 'Hauswirtschaftsraum' }) === 1.6
+  && Pz.softName('Schlafzimmer') === 'Schlaf­zimmer' && Pz.softName('Abstellraum') === 'Abstell­raum' && Pz.softName('Gästebad oben') === 'Gäste­bad oben'
+  && Pz.softName('Bad') === 'Bad' && Pz.softName('Büro 2') === 'Büro 2' && Pz.softName('Küche') === 'Küche' && Pz.softName('Badezimmerschrank') === 'Badezimmerschrank'
+  && Pz.FLOORS.map(f => f.short).join() === 'OG,EG,Keller');
 check('ids: new rooms and own jobs pass the checks of the shared data', Array.from({ length: 30 }, () => Pz.newRoomId()).every(id => /^[a-z0-9]{1,20}$/.test(id)) && Array.from({ length: 30 }, () => Pz.newJobKey()).every(k => /^x[a-z0-9]{1,12}$/.test(k)) && Pz.doneId('kueche', 'saugen') === 'putz-d-kueche-saugen');
 check('a chosen day counts at noon', new Date(Pz.atNoon(new Date(2026, 9, 6, 23, 59))).getHours() === 12 && new Date(Pz.atNoon(new Date(2026, 9, 6, 0, 1))).getDate() === 6 && Pz.shortDate(new Date(2026, 9, 5)) === 'Mo, 5. Okt.');
 

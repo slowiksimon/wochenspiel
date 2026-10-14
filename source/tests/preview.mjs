@@ -1,6 +1,6 @@
 // Screenshots of the real app for the visual check (fake Firebase, frozen clock: Wednesday 7 Oct 2026, week 41).
-//   node tests/preview.mjs [scenario ...]          env: WIDTH=390 HEIGHT=844 DARK=1 TAG=x
-// scenarios: week scrolled drag dragzone shop wish editor settings who wishsheet import empty muell muellsheet putz putzsheet putzempty
+//   node tests/preview.mjs [scenario ...]          env: WIDTH=390 HEIGHT=844 DARK=1 TAG=x FLOOR=og|eg|kg (Putzen)
+// scenarios: week scrolled drag dragzone shop wish editor settings who wishsheet import empty muell muellsheet putz putzsheet putzempty putztap
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch, phone, sleep, tapSel, setValue, net, NOW, W, UA_IPHONE } from './e2e-lib.mjs';
@@ -52,9 +52,9 @@ async function open(empty, noIds) {
   server.reset();
   seed(empty, noIds);
   const P = await phone(browser, server.url, { dark: DARK, ua: UA_IPHONE, width: WIDTH, height: HEIGHT });
-  await P.page.evaluateOnNewDocument((conn, uid, noMe) => {
-    try { localStorage.setItem('ws.v1', JSON.stringify(conn)); localStorage.setItem('ws.uid', uid); if (!noMe) localStorage.setItem('wp2.me', 'a'); localStorage.setItem('wp2.hint', '1'); localStorage.setItem('ws.install', '1'); } catch (e) { /* ignore */ }
-  }, { v: 1, cfg: CFG, room: ROOM }, UID, !!noIds);
+  await P.page.evaluateOnNewDocument((conn, uid, noMe, floor) => {
+    try { localStorage.setItem('ws.v1', JSON.stringify(conn)); localStorage.setItem('ws.uid', uid); if (!noMe) localStorage.setItem('wp2.me', 'a'); localStorage.setItem('wp2.hint', '1'); localStorage.setItem('ws.install', '1'); if (floor) localStorage.setItem('wp2.putz.floor', floor); } catch (e) { /* ignore */ }
+  }, { v: 1, cfg: CFG, room: ROOM }, UID, !!noIds, process.env.FLOOR || 'eg');
   await P.page.goto(server.url, { waitUntil: 'load' });
   await P.page.evaluate(() => document.fonts.ready);
   await sleep(1500);
@@ -137,7 +137,7 @@ if (want('muell') || want('muellsheet')) {
   report(P, 'muell');
   await P.close();
 }
-if (want('putz') || want('putzsheet') || want('putzempty')) {
+if (want('putz') || want('putzsheet') || want('putzempty') || want('putztap')) {
   const P = await open(false);
   const p = P.page;
   const day = 864e5;
@@ -156,6 +156,14 @@ if (want('putz') || want('putzsheet') || want('putzempty')) {
     await shot(P, tag);
     await p.evaluate(() => window.scrollTo(0, 560)); await sleep(300); await shot(P, tag + '2');
     await p.evaluate(() => window.scrollTo(0, 99999)); await sleep(300); await shot(P, tag + '3');
+  }
+  if (want('putztap')) {
+    await p.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+    await tapSel(p, '#pz-plan [data-room="' + (process.env.ROOMID || 'kueche') + '"]'); await sleep(650);
+    await shot(P, 'putztap');
+    await tapSel(p, '#pz-list [data-key="' + (process.env.ROOMID || 'kueche') + '-wischen"]'); await sleep(300);
+    await p.evaluate(() => window.scrollTo(0, 0)); await sleep(1200);
+    await shot(P, 'putztap2');
   }
   if (want('putzsheet')) {
     await p.evaluate(() => window.scrollTo(0, 0)); await sleep(200);

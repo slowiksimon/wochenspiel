@@ -1,20 +1,33 @@
-// The "Putzen" screen: every room of the house by floor, and for each room its jobs (Saugen, Wischen, …). A job shows when it
-// was last done, and its colour drains like straw from a full field to an empty one as its rhythm runs out; overdue jobs turn
-// dark. One tap on a job: done today (with "Rückgängig"). The room's sheet sets the rhythms, adds or removes jobs and enters
-// earlier dates. On top: the most urgent job, with one tap to tick it off. Data and rules: putz-core.js.
+// The "Putzen" screen, one floor at a time. On top the switch between the floors (OG, EG, Keller, each with what is due
+// there) and the plan of the floor shown: every room one field that is light when it is clean, drains as its jobs come due,
+// turns dim when one is due today and dark when one is overdue; a tap on a room jumps to its jobs. Under the plan the most
+// urgent job of the whole house, with one tap to tick it off. Below, the rooms of the floor with their jobs (Saugen,
+// Wischen, …): when each was last done, its colour draining the same way. One tap on a job: done today (with "Rückgängig").
+// The room's sheet sets the rhythms, adds or removes jobs and enters earlier dates. Data and rules: putz-core.js.
 import * as P from './putz-core.js';
 import { h, $, ico } from './dom.js';
 import { toast } from './toast.js';
-import { nestSvg } from './nest.js';
 import { setBadge } from './nav.js';
 import { openSheet, closeSheet, sheetBar, armable } from './sheet.js';
 import { watchSettings, docData } from './hub.js';
 
 const tick = () => { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* not supported */ } };
+// the floor shown is remembered on this phone
+const FLOOR_KEY = 'wp2.putz.floor';
+const storedFloor = () => { try { const v = localStorage.getItem(FLOOR_KEY); return P.FLOOR[v] ? v : null; } catch (e) { return null; } };
 const S = {
   db: null, uid: null, loaded: false, failed: false, offline: navigator.onLine === false, stuck: false,
-  rooms: P.defaultRooms(), stored: false, done: new Map(), people: { a: '', b: '', aId: null, bId: null }, stamp: null
+  rooms: P.defaultRooms(), stored: false, done: new Map(), people: { a: '', b: '', aId: null, bId: null }, stamp: null,
+  floor: storedFloor()
 };
+function chooseFloor(id) { S.floor = id; try { localStorage.setItem(FLOOR_KEY, id); } catch (e) { /* blocked */ } }
+// the floor shown: the chosen one while it has rooms, otherwise the first floor that has some
+function floorShown() {
+  const has = id => S.rooms.some(r => r.f === id);
+  if (S.floor && has(S.floor)) return S.floor;
+  const f = P.FLOORS.find(x => has(x.id));
+  return f ? f.id : null;
+}
 const personName = w => (w === 'a' ? S.people.a || 'Person 1' : w === 'b' ? S.people.b || 'Person 2' : '');
 // who this phone belongs to: the same rule as the game and the lists
 function me() {
@@ -50,19 +63,20 @@ function build() {
   const screen = $('#screen-putz');
   if (!screen || el.built) return !!el.built;
   el.built = true;
-  const deco = document.createElement('template'); deco.innerHTML = nestSvg('hero-deco');
   el.cap = h('p', { class: 'cap', id: 'pz-cap' });
+  el.floors = h('div', { class: 'pz-floors', id: 'pz-floors', role: 'radiogroup', 'aria-label': 'Stockwerk' });
+  el.plan = h('div', { class: 'pz-plan', id: 'pz-plan', role: 'group' });
   el.next = h('div', { class: 'pz-next', id: 'pz-next' });
   el.status = h('p', { class: 'li-status', id: 'pz-status', role: 'status', hidden: true });
   el.list = h('div', { class: 'pz-list', id: 'pz-list' });
   screen.append(
-    h('header', { class: 'hero hero-list hero-putz straw' }, deco.content.firstElementChild,
+    h('header', { class: 'hero hero-list hero-putz straw' },
       h('div', { class: 'hero-in' },
         h('div', { class: 'head' },
           h('div', { class: 'cap-row' }, el.cap),
           h('div', { class: 'ttl-row' }, h('h1', { class: 'ttl', text: 'Putzen' })),
           h('div', { class: 'head-btns' }, h('button', { type: 'button', class: 'plus-btn', id: 'pz-add', 'aria-label': 'Raum hinzufügen', onclick: () => roomSheet(null) }, ico('plus')))),
-        el.next)),
+        el.floors, el.plan, el.next)),
     h('div', { class: 'li-wrap pz-wrap' }, el.status, el.list));
   return true;
 }
@@ -71,41 +85,103 @@ function render() {
   if (!build()) return;
   const now = new Date();
   const ov = P.overview(S.rooms, S.done, now);
-  paintHero(ov, now);
+  const fl = floorShown();
+  paintFloors(ov, fl);
+  paintPlan(ov, fl);
+  paintHero(ov, fl);
   paintStatus();
-  keepFocus(() => paintList(ov));
+  keepFocus(() => paintList(ov, fl));
   setBadge('putz', S.loaded ? ov.due.length : 0);
   const tab = $('#open-putz');
   if (tab) tab.setAttribute('aria-label', 'Putzen' + (S.loaded && ov.due.length ? ', ' + ov.due.length + ' fällig' : ''));
   if (S.stamp) { const k = S.stamp; S.stamp = null; setTimeout(() => { const c = el.list.querySelector('[data-key="' + k + '"]'); if (c) c.classList.remove('stamp'); }, 1200); }
 }
 
-function lastText(it, long) {
-  if (!it.rec) return 'noch nie';
-  return P.sinceText(it.st.since, !long) + (long && it.rec.by ? ', ' + personName(it.rec.by) : '');
+const lastText = it => (it.rec ? P.sinceText(it.st.since, true) : 'noch nie');
+
+/* ---------- the floors and the plan of the floor shown ---------- */
+// OG / EG / Keller, each with the number of jobs due there; only floors that have rooms, and only when there are two or more
+function paintFloors(ov, fl) {
+  const floors = P.FLOORS.filter(f => S.rooms.some(r => r.f === f.id));
+  el.floors.hidden = floors.length < 2;
+  const had = el.floors.contains(document.activeElement) ? document.activeElement.dataset.floor : null;
+  el.floors.replaceChildren(...floors.map(f => {
+    const n = S.loaded ? ov.byRoom.reduce((s, r) => s + (r.room.f === f.id ? r.due : 0), 0) : 0;
+    return h('button', { type: 'button', role: 'radio', class: 'pz-fbtn', dataset: { floor: f.id }, 'aria-checked': String(f.id === fl), 'aria-label': f.name + (n ? ', ' + n + ' fällig' : ''),
+      onclick: () => { if (f.id !== floorShown()) { tick(); chooseFloor(f.id); render(); } } },
+    h('span', { text: f.short }), n ? h('span', { class: 'pz-fcnt', text: String(n) }) : null);
+  }));
+  if (had) { const b = el.floors.querySelector('[data-floor="' + had + '"]'); if (b) { try { b.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }
 }
 
-function paintHero(ov) {
+// The plan is built again only when the floor, its rooms or the width change; otherwise each room just gets its new
+// state, so a room that was ticked off fills up with light instead of being swapped.
+const plan = { key: '', rooms: new Map() };
+const planWidth = () => Math.min(document.documentElement.clientWidth || window.innerWidth || 390, 560) - 40;
+// beside the big room: two rooms a row on a phone, three on a wider screen
+const restPer = () => (planWidth() >= 476 ? 3 : 2);
+function buildPlan(key, rooms, fl) {
+  plan.key = key; plan.rooms = new Map();
+  const L = P.planLayout(rooms, restPer());
+  const field = (room, big) => {
+    const sub = h('small');
+    const b = h('button', { type: 'button', class: 'pz-hr', dataset: { room: room.id }, onclick: () => goRoom(room.id) }, h('b', { text: P.softName(room.n) }), sub);
+    if (!big) b.style.flexGrow = String(P.roomSize(room));
+    plan.rooms.set(room.id, { b, sub, big });
+    return b;
+  };
+  const rows = L.rows.map(row => h('div', { class: 'pz-prow' }, row.map(r => field(r, false))));
+  el.plan.className = 'pz-plan' + (L.big ? ' has-big' : '') + (L.big && L.rows.every(r => r.length === 1) ? ' is-half' : '');
+  el.plan.hidden = !rooms.length;
+  el.plan.setAttribute('aria-label', fl ? 'Räume im ' + P.FLOOR[fl].name : 'Räume');
+  el.plan.replaceChildren(...(L.big ? [field(L.big, true), h('div', { class: 'pz-prest' }, rows)] : rows));
+}
+function paintPlan(ov, fl) {
+  const rooms = fl ? S.rooms.filter(r => r.f === fl) : [];
+  const key = fl + '|' + restPer() + '|' + rooms.map(r => r.id + '\u0001' + r.n).join('\u0002');
+  if (key !== plan.key) buildPlan(key, rooms, fl);
+  for (const r of ov.byRoom) {
+    const t = plan.rooms.get(r.room.id);
+    if (!t) continue;
+    const s = S.loaded ? P.roomState(r) : null;
+    t.b.className = 'pz-hr is-' + (s ? s.state : 'wait') + (t.big ? ' is-big' : '');
+    t.b.style.setProperty('--fill', (s ? s.fill : 0).toFixed(3));
+    t.sub.textContent = s ? s.text : '';
+    t.b.setAttribute('aria-label', r.room.n + ', ' + (s ? P.roomSpeech(s) : 'wird geladen') + '. Antippen: zu den Arbeiten');
+  }
+}
+// a tap on a room: its row in the list below comes into view, lights up briefly and gets the focus
+let flashTimer = 0;
+function goRoom(id) {
+  const row = el.list.querySelector('.pz-room[data-room="' + CSS.escape(id) + '"]');
+  if (!row) return;
+  const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  row.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
+  for (const o of el.list.querySelectorAll('.pz-room.is-flash')) o.classList.remove('is-flash');
+  void row.offsetWidth;
+  row.classList.add('is-flash');
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => { const r = el.list.querySelector('.pz-room.is-flash'); if (r) r.classList.remove('is-flash'); }, 1800);
+  const head = row.querySelector('.pz-rhead');
+  if (head) { try { head.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+}
+let resizeTimer = 0;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (el.built && plan.key && plan.key.split('|')[1] !== String(restPer())) render(); }, 150); });
+
+// under the plan: the most urgent job of the whole house (with its floor, when another one is shown), with "Erledigt"
+const IM = { og: 'im Obergeschoss', eg: 'im Erdgeschoss', kg: 'im Keller' };
+function paintHero(ov, fl) {
   el.cap.textContent = !S.loaded ? '' : ov.due.length ? ov.due.length + ' fällig' : ov.recorded ? 'Alles erledigt' : 'Noch nichts eingetragen';
   if (!S.loaded) { el.next.replaceChildren(); return; }
   const top = ov.due[0];
+  const line = (head, text) => h('div', { class: 'pz-nt' }, h('b', { text: head }), h('span', { text }));
   if (top) {
-    el.next.replaceChildren(
-      h('p', { class: 'pz-big', text: top.room.n }),
-      h('p', { class: 'pz-what', text: P.jobName(top.job) + ', ' + P.dueText(top.st) }),
-      h('p', { class: 'pz-last', text: 'Zuletzt ' + lastText(top, true) }),
-      h('div', { class: 'pz-acts' },
-        h('button', { type: 'button', class: 'pillbtn pz-done', id: 'pz-top-done', onclick: () => markDone(top) }, ico('check'), 'Erledigt'),
-        ov.due.length > 1 ? h('span', { class: 'pz-more', text: 'und ' + (ov.due.length - 1) + ' weitere' }) : null));
+    el.next.replaceChildren(line(top.room.n + ': ' + P.jobName(top.job), P.dueText(top.st) + (top.room.f !== fl ? ', ' + IM[top.room.f] : '')),
+      h('button', { type: 'button', class: 'pillbtn pz-done', id: 'pz-top-done', onclick: () => markDone(top) }, ico('check'), 'Erledigt'));
   } else if (!ov.recorded) {
-    el.next.replaceChildren(
-      h('p', { class: 'pz-big', text: 'Wann war was?' }),
-      h('p', { class: 'pz-what soft', text: 'Tippt unten auf eine Arbeit, wenn sie erledigt ist. Frühere Termine tragt ihr im Raum nach.' }));
+    el.next.replaceChildren(line('Wann war was?', 'Tippt unten auf eine Arbeit, wenn sie erledigt ist. Frühere Termine tragt ihr im Raum nach.'));
   } else {
     const n = ov.next;
-    el.next.replaceChildren(
-      h('p', { class: 'pz-big', text: 'Alles sauber' }),
-      h('p', { class: 'pz-what soft', text: n ? 'Als Nächstes ' + n.room.n + ': ' + P.jobName(n.job) + ', ' + P.dueText(n.st) : 'Nichts ist fällig.' }));
+    el.next.replaceChildren(line('Alles sauber', n ? 'Als Nächstes ' + n.room.n + ': ' + P.jobName(n.job) + ', ' + P.dueText(n.st) : 'Nichts ist fällig.'));
   }
 }
 
@@ -123,7 +199,7 @@ function chip(it) {
     + '. Antippen: heute erledigt';
   const b = h('button', { type: 'button', class: 'pz-chip is-' + st.state + (S.stamp === key ? ' stamp' : ''), dataset: { key, job: it.job.k }, 'aria-label': label, onclick: () => markDone(it) },
     h('b', { text: P.jobName(it.job) }),
-    h('small', null, it.rec && it.rec.by ? h('i', { class: 'dot who-' + it.rec.by }) : null, lastText(it, false)));
+    h('small', null, it.rec && it.rec.by ? h('i', { class: 'dot who-' + it.rec.by }) : null, lastText(it)));
   b.style.setProperty('--fill', st.fill.toFixed(3));
   return b;
 }
@@ -139,29 +215,33 @@ function roomRow(r) {
     r.jobs.length ? h('div', { class: 'pz-chips' }, r.jobs.map(chip)) : h('p', { class: 'pz-nojobs', text: 'Noch keine Arbeiten. Tippt auf den Raum, um welche hinzuzufügen.' }));
 }
 
-function paintList(ov) {
+// the rooms of the floor shown
+function paintList(ov, fl) {
   if (!S.loaded) { el.list.replaceChildren(empty('Lade …')); return; }
   const nodes = [];
-  for (const f of P.FLOORS) {
-    const rows = ov.byRoom.filter(r => r.room.f === f.id);
-    if (!rows.length) continue;
+  const f = fl ? P.FLOOR[fl] : null;
+  const rows = f ? ov.byRoom.filter(r => r.room.f === f.id) : [];
+  if (rows.length) {
     const due = rows.reduce((n, r) => n + r.due, 0);
     nodes.push(h('h3', { class: 'li-group pz-floor' }, f.name, due ? h('span', { class: 'cnt pz-cnt', text: due + ' fällig' }) : null),
       h('ul', { class: 'card li-list pz-rooms', 'aria-label': f.name }, rows.map(roomRow)));
-  }
-  if (!nodes.length) nodes.push(empty('Noch keine Räume', 'Legt mit + euren ersten Raum an.'));
+  } else nodes.push(empty('Noch keine Räume', 'Legt mit + euren ersten Raum an.'));
   nodes.push(h('button', { type: 'button', class: 'pz-addroom', id: 'pz-add2', onclick: () => roomSheet(null) }, ico('plus'), 'Raum hinzufügen'),
     h('p', { class: 'pz-help', text: 'Eine Arbeit antippen: heute erledigt. Einen Raum antippen: Rhythmus ändern, frühere Termine nachtragen, Arbeiten hinzufügen.' }));
   el.list.replaceChildren(...nodes);
 }
 const empty = (head, text) => h('div', { class: 'li-empty' }, h('span', { class: 'eic', 'aria-hidden': 'true' }, ico('broom')), h('strong', { text: head }), text ? h('p', { text }) : null);
 
-// repainting must not throw a keyboard user out of the job they are on
+// repainting must not throw a keyboard user out of the job or the room they are on
 function keepFocus(fn) {
   const ae = document.activeElement;
-  const key = ae && ae.dataset ? ae.dataset.key : null;
+  const inList = ae && el.list.contains(ae);
+  const key = inList && ae.dataset ? ae.dataset.key : null;
+  const room = inList && !key && ae.classList.contains('pz-rhead') ? ae.closest('[data-room]').dataset.room : null;
   fn();
-  if (key) { const e = el.list.querySelector('[data-key="' + CSS.escape(key) + '"]'); if (e) { try { e.focus({ preventScroll: true }); } catch (x) { /* ignore */ } } }
+  const e = key ? el.list.querySelector('[data-key="' + CSS.escape(key) + '"]')
+    : room ? el.list.querySelector('.pz-room[data-room="' + CSS.escape(room) + '"] .pz-rhead') : null;
+  if (e) { try { e.focus({ preventScroll: true }); } catch (x) { /* ignore */ } }
 }
 
 /* ---------- a room's sheet: name, floor, jobs with rhythm and the last time they were done ---------- */
@@ -169,7 +249,7 @@ const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0
 function roomSheet(room) {
   const isNew = !room;
   const orig = room ? JSON.parse(JSON.stringify(room)) : null;
-  const draft = room ? JSON.parse(JSON.stringify(room)) : { id: P.newRoomId(), n: '', f: 'eg', j: [{ k: 'saugen', e: 7 }, { k: 'wischen', e: 14 }] };
+  const draft = room ? JSON.parse(JSON.stringify(room)) : { id: P.newRoomId(), n: '', f: floorShown() || 'eg', j: [{ k: 'saugen', e: 7 }, { k: 'wischen', e: 14 }] };
   const dates = new Map();                                      // job key -> the time chosen in this sheet
   const name = h('input', { type: 'text', id: 'pz-name', maxlength: String(P.MAX_ROOM_NAME), autocomplete: 'off', autocapitalize: 'sentences', placeholder: 'z. B. Gästezimmer', value: draft.n });
   const seg = h('div', { class: 'seg', id: 'pz-floor', role: 'radiogroup', 'aria-label': 'Stockwerk' });
@@ -230,6 +310,8 @@ function roomSheet(room) {
     if (at >= 0) rooms[at] = draft; else rooms.push(draft);
     if (rooms.length > P.MAX_ROOMS) { showErr('Mehr als ' + P.MAX_ROOMS + ' Räume gehen nicht.'); return; }
     closeSheet();
+    // a new room, or one moved to another floor: show its floor, so it does not seem to be gone
+    if (draft.f !== floorShown()) chooseFloor(draft.f);
     const changed = isNew || JSON.stringify(P.roomsDoc([orig])) !== JSON.stringify(P.roomsDoc([draft]));
     if (changed) putRooms(P.cleanRooms(P.roomsDoc(rooms)));
     for (const [k, t] of dates) if (draft.j.some(j => j.k === k)) putDone(draft.id, k, P.doneRecord(S.done.get(draft.id + '-' + k) || null, t, me()));

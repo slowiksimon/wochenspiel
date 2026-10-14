@@ -8,7 +8,7 @@ Die App, die im Hauptverzeichnis dieses Repos liegt (`index.html`, `sw.js`, `man
 | --- | --- |
 | `src/app.js` | Wochenansicht: Nest, Wochenleiste, Aufgaben, Verschieben per Gedrückthalten, Dialoge für Aufgabe, Einstellungen und „Wer bist du?“ |
 | `src/lists.js`, `src/lists-core.js` | Einkaufsliste und Wunschliste (Bildschirme, Dialoge, Listen einfügen, Regeln für Titel, Preise, Links) |
-| `src/putz.js`, `src/putz-core.js` | Putzübersicht: alle Räume nach Stockwerk, je Raum die Arbeiten mit Rhythmus, zuletzt erledigt (wann, von wem), fällig und überfällig; Raum-Dialog zum Bearbeiten |
+| `src/putz.js`, `src/putz-core.js` | Putzübersicht: oben Umschalter OG / EG / Keller (mit Zahl der fälligen Arbeiten) und der Grundriss des gewählten Geschosses, jeder Raum ein Feld: hell = sauber, leert sich bis zur nächsten Fälligkeit, gedämpft = heute fällig, dunkel = überfällig, Tipp springt zu seinen Arbeiten; darunter die Räume dieses Geschosses, je Raum die Arbeiten mit Rhythmus, zuletzt erledigt (wann, von wem), fällig und überfällig; Raum-Dialog zum Bearbeiten |
 | `src/muell.js`, `src/muell-core.js`, `src/muell-data.js` | Müllplan Pfaffstätten: Monatsansicht, nächste Abholung, „Eure Tonnen“ (Straße, Tonnen); Termine und Straßen aus dem Abfuhrplan 2026 des GVA Baden |
 | `src/muell-ics.js` | Kalenderdateien zum Abonnieren (Erinnerung um 19 Uhr am Vorabend), eine je Restmüll-Bereich und Tonnen-Kombination; der Build schreibt sie nach `dist/kalender/` |
 | `src/shell.js`, `src/codec.js`, `src/adapter.js` | Einrichtung, Einladungslink und QR-Code, Anbindung an Firestore (mit Offline-Verhalten) |
